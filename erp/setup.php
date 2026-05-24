@@ -10,7 +10,7 @@ $installed = false;
 try {
     $pdo = db();
 
-    runSqlFile($pdo, __DIR__ . '/database/install.postgresql.sql');
+    runSqlFile($pdo, __DIR__ . '/database/install.sql');
 
     $hash = password_hash('admin123', PASSWORD_DEFAULT);
     $demoUsers = [
@@ -29,8 +29,13 @@ try {
         }
     }
 
+    $migratePath = __DIR__ . '/database/migrate_shop.sql';
+    if (is_file($migratePath)) {
+        runSqlFile($pdo, $migratePath);
+    }
+
     $installed = true;
-    $message = 'PostgreSQL database ready. Logins: admin@ikos.com / sales@ikos.com / driver@ikos.com — password: admin123';
+    $message = 'MySQL database ready. Logins: admin@ikos.com / sales@ikos.com / driver@ikos.com — password: admin123';
 } catch (Throwable $e) {
     $error = $e->getMessage();
 }
@@ -54,7 +59,7 @@ $base = BASE_URL === '' ? '' : BASE_URL;
             <a href="<?= htmlspecialchars($base . '/login.php') ?>" class="btn btn-primary" style="width:100%;text-align:center;margin-top:1rem;display:block;padding:0.75rem">Go to Login</a>
         <?php elseif ($error): ?>
             <div class="alert alert-error"><?= htmlspecialchars($error) ?></div>
-            <p class="text-muted" style="margin-top:1rem;font-size:0.85rem">Make sure PostgreSQL is configured (DATABASE_URL on Render) and credentials in config/config.php</p>
+            <p class="text-muted" style="margin-top:1rem;font-size:0.85rem">Set DB_HOST, DB_PORT, DB_NAME, DB_USER, DB_PASSWORD on Render then reload.</p>
         <?php endif; ?>
     </div>
 </div>

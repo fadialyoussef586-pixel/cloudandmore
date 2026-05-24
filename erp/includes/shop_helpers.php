@@ -92,9 +92,9 @@ function createDeliveryFromOrder(int $orderId, int $userId): void
     }
 
     $num = generateNumber('DEL');
-    $stmt = db()->prepare('INSERT INTO deliveries (delivery_number, customer_id, order_id, delivery_address, status, scheduled_date, user_id) VALUES (?,?,?,?,?,?,?) RETURNING id');
-    $stmt->execute([$num, $order['customer_id'], $orderId, $order['delivery_address'], 'pending', date('Y-m-d'), $userId]);
-    $deliveryId = (int) $stmt->fetchColumn();
+    db()->prepare('INSERT INTO deliveries (delivery_number, customer_id, order_id, delivery_address, status, scheduled_date, user_id) VALUES (?,?,?,?,?,?,?)')
+        ->execute([$num, $order['customer_id'], $orderId, $order['delivery_address'], 'pending', date('Y-m-d'), $userId]);
+    $deliveryId = dbLastInsertId(db());
     $items = db()->prepare('SELECT * FROM order_items WHERE order_id = ?');
     $items->execute([$orderId]);
     foreach ($items->fetchAll() as $item) {

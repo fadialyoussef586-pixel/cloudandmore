@@ -12,18 +12,18 @@ $sales = $inventory = $payroll = $deliveryReport = [];
 $salesTotal = 0;
 
 if ($type === 'sales') {
-    $stmt = db()->prepare("SELECT i.*, c.name AS customer_name FROM invoices i JOIN customers c ON c.id = i.customer_id WHERE i.created_at::date BETWEEN ?::date AND ?::date ORDER BY i.created_at DESC");
+    $stmt = db()->prepare("SELECT i.*, c.name AS customer_name FROM invoices i JOIN customers c ON c.id = i.customer_id WHERE DATE(i.created_at) BETWEEN ? AND ? ORDER BY i.created_at DESC");
     $stmt->execute([$from, $to]);
     $sales = $stmt->fetchAll();
     foreach ($sales as $s) { $salesTotal += (float) $s['total']; }
 } elseif ($type === 'inventory') {
     $inventory = db()->query('SELECT * FROM products ORDER BY quantity ASC')->fetchAll();
 } elseif ($type === 'payroll') {
-    $stmt = db()->prepare("SELECT p.*, e.name_ar, e.name_en, e.employee_code FROM payroll p JOIN employees e ON e.id = p.employee_id WHERE make_date(p.year, p.month, 1) BETWEEN ?::date AND ?::date");
+    $stmt = db()->prepare("SELECT p.*, e.name_ar, e.name_en, e.employee_code FROM payroll p JOIN employees e ON e.id = p.employee_id WHERE STR_TO_DATE(CONCAT(p.year, '-', LPAD(p.month, 2, '0'), '-01'), '%Y-%m-%d') BETWEEN ? AND ?");
     $stmt->execute([$from, $to]);
     $payroll = $stmt->fetchAll();
 } elseif ($type === 'delivery') {
-    $stmt = db()->prepare("SELECT d.*, c.name AS customer_name FROM deliveries d LEFT JOIN customers c ON c.id = d.customer_id WHERE d.created_at::date BETWEEN ?::date AND ?::date ORDER BY d.created_at DESC");
+    $stmt = db()->prepare("SELECT d.*, c.name AS customer_name FROM deliveries d LEFT JOIN customers c ON c.id = d.customer_id WHERE DATE(d.created_at) BETWEEN ? AND ? ORDER BY d.created_at DESC");
     $stmt->execute([$from, $to]);
     $deliveryReport = $stmt->fetchAll();
 }

@@ -29,14 +29,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $customerId = $c->fetchColumn();
             }
             if (!$customerId) {
-                $stmt = $pdo->prepare('INSERT INTO customers (name, email, phone, address) VALUES (?,?,?,?) RETURNING id');
-                $stmt->execute([$name, $email ?: null, $phone, $address]);
-                $customerId = (int) $stmt->fetchColumn();
+                $pdo->prepare('INSERT INTO customers (name, email, phone, address) VALUES (?,?,?,?)')->execute([$name, $email ?: null, $phone, $address]);
+                $customerId = dbLastInsertId($pdo);
             }
             $orderNum = generateNumber('ORD');
-            $stmt = $pdo->prepare('INSERT INTO orders (order_number, customer_id, customer_name, customer_email, customer_phone, delivery_address, subtotal, total, status, source) VALUES (?,?,?,?,?,?,?,?,?,?) RETURNING id');
-            $stmt->execute([$orderNum, $customerId, $name, $email ?: null, $phone, $address, $total, $total, 'new', 'website']);
-            $orderId = (int) $stmt->fetchColumn();
+            $pdo->prepare('INSERT INTO orders (order_number, customer_id, customer_name, customer_email, customer_phone, delivery_address, subtotal, total, status, source) VALUES (?,?,?,?,?,?,?,?,?,?)')
+                ->execute([$orderNum, $customerId, $name, $email ?: null, $phone, $address, $total, $total, 'new', 'website']);
+            $orderId = dbLastInsertId($pdo);
             foreach ($items as $row) {
                 $p = $row['product'];
                 $pdo->prepare('INSERT INTO order_items (order_id, product_id, description, quantity, unit_price, total) VALUES (?,?,?,?,?,?)')

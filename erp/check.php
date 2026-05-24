@@ -14,9 +14,9 @@ $checks[] = [
 ];
 
 $checks[] = [
-    'label' => 'PDO PostgreSQL',
-    'ok' => extension_loaded('pdo_pgsql'),
-    'detail' => extension_loaded('pdo_pgsql') ? 'مفعّل' : 'غير مفعّل — ثبّت pdo_pgsql',
+    'label' => 'PDO MySQL',
+    'ok' => extension_loaded('pdo_mysql'),
+    'detail' => extension_loaded('pdo_mysql') ? 'مفعّل' : 'غير مفعّل — ثبّت pdo_mysql',
 ];
 
 $checks[] = [
@@ -44,7 +44,7 @@ try {
 }
 
 $checks[] = [
-    'label' => 'PostgreSQL',
+    'label' => 'MySQL',
     'ok' => $dbOk,
     'detail' => $dbDetail,
 ];
