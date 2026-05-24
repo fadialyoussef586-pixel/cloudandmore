@@ -63,7 +63,6 @@ return [
     'invoice_serial_required' => 'أدخل السيريال نمبر',
     'invoice_serial_duplicate' => 'هذا السيريال مسجّل مسبقاً',
     'invoice_price_missing' => 'سعر المنتج غير محدد في المخزون',
-    'invoice_vat_hint' => 'شامل ضريبة ' . INVOICE_VAT_PERCENT . '%',
     'invoice_items_required' => 'أكمل بيانات البيع',
     'subtotal' => 'المجموع الفرعي',
     'tax' => 'الضريبة',

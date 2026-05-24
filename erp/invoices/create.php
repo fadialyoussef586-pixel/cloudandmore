@@ -175,7 +175,6 @@ require __DIR__ . '/../includes/header.php';
             <div class="sale-total-preview" id="saleTotalPreview">
                 <span><?= e(__('total')) ?></span>
                 <strong><?= formatMoney($previewTotals['total']) ?></strong>
-                <small class="text-muted"><?= e(__('invoice_vat_hint')) ?></small>
             </div>
 
             <button type="submit" class="btn btn-primary btn-lg"><?= e(__('save_sale')) ?></button>
@@ -193,9 +192,7 @@ require __DIR__ . '/../includes/header.php';
     const opt = product.selectedOptions[0];
     const price = parseFloat(opt?.dataset.price || 0);
     const q = parseInt(qty.value || '1', 10);
-    const sub = price * q;
-    const vat = sub * (<?= (float) INVOICE_VAT_PERCENT ?> / 100);
-    const total = sub + vat;
+    const total = price * q;
     preview.querySelector('strong').textContent =
       total.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' SAR';
   }

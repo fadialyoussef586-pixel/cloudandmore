@@ -27,7 +27,40 @@
 .product-card form .btn { width: 100%; justify-content: center; }
 .product-detail { display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; align-items: start; }
 .product-detail img { width: 100%; border-radius: 12px; border: 1px solid var(--border); }
-@media (max-width: 768px) { .product-detail { grid-template-columns: 1fr; } }
+@media (max-width: 768px) {
+  .shop-container { width: min(1160px, 94%); }
+  .shop-main { padding: 1.25rem 0 2rem; }
+  .shop-nav { min-height: 56px; padding: 0.25rem 0; }
+  .shop-links {
+    width: 100%;
+    justify-content: center;
+    gap: 0.75rem;
+    font-size: 0.9rem;
+  }
+  .product-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.75rem;
+  }
+  .product-card h3 { font-size: 0.85rem; padding: 0.5rem 0.65rem 0.2rem; }
+  .product-price { font-size: 0.85rem; padding: 0 0.65rem; }
+  .product-card form { padding: 0 0.65rem 0.65rem; }
+  .product-card form .btn { min-height: 44px; }
+  .product-detail { grid-template-columns: 1fr; gap: 1.25rem; }
+  .cart-table { font-size: 0.85rem; }
+  .cart-table th,
+  .cart-table td { padding: 0.5rem 0.35rem; }
+  .driver-header {
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    padding: 0.85rem 1rem;
+  }
+  .driver-cards { padding: 1rem; }
+  .driver-actions .btn { flex: 1 1 auto; min-height: 44px; justify-content: center; }
+}
+
+@media (max-width: 400px) {
+  .product-grid { grid-template-columns: 1fr; }
+}
 .cart-table { width: 100%; }
 .cart-table img { width: 56px; height: 56px; object-fit: cover; border-radius: 8px; }
 .checkout-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; }

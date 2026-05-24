@@ -16,6 +16,8 @@ try {
 
     runSqlFile($pdo, __DIR__ . '/database/migrate_invoice_simple.sql');
 
+    runSqlFile($pdo, __DIR__ . '/database/migrate_purchases.sql');
+
     $hash = password_hash('admin123', PASSWORD_DEFAULT);
     $demoUsers = [
         ['Administrator', 'admin@iqos.com', 'admin'],

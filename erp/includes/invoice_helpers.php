@@ -19,17 +19,14 @@ function ensureInvoiceSchema(): void
 /** @return array{subtotal: float, tax_rate: float, tax_amount: float, discount: float, total: float} */
 function invoiceTotalsFromLines(float $subtotal): array
 {
-    $taxRate = (float) INVOICE_VAT_PERCENT;
-    $taxAmount = round($subtotal * ($taxRate / 100), 2);
-    $discount = 0.0;
-    $total = round($subtotal + $taxAmount - $discount, 2);
+    $subtotal = round($subtotal, 2);
 
     return [
         'subtotal' => $subtotal,
-        'tax_rate' => $taxRate,
-        'tax_amount' => $taxAmount,
-        'discount' => $discount,
-        'total' => $total,
+        'tax_rate' => 0.0,
+        'tax_amount' => 0.0,
+        'discount' => 0.0,
+        'total' => $subtotal,
     ];
 }
 

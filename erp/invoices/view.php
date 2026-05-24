@@ -57,10 +57,6 @@ require __DIR__ . '/../includes/header.php';
 
         <div class="sale-receipt-total">
             <strong><?= e(__('total')) ?>: <?= formatMoney((float) $invoice['total']) ?></strong>
-            <small class="text-muted">
-                <?= e(__('subtotal')) ?> <?= formatMoney((float) $invoice['subtotal']) ?>
-                + <?= e(__('tax')) ?> <?= (int) $invoice['tax_rate'] ?>%
-            </small>
         </div>
         <?php endif; ?>
 

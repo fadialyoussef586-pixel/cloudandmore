@@ -63,7 +63,6 @@ return [
     'invoice_serial_required' => 'Enter serial number',
     'invoice_serial_duplicate' => 'This serial is already registered',
     'invoice_price_missing' => 'Product has no price in inventory',
-    'invoice_vat_hint' => 'Includes ' . INVOICE_VAT_PERCENT . '% VAT',
     'invoice_items_required' => 'Complete the sale form',
     'subtotal' => 'Subtotal',
     'tax' => 'Tax',

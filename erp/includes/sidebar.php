@@ -4,6 +4,7 @@ $navItems = [
     ['file' => 'index.php', 'icon' => '📊', 'label' => 'dashboard', 'path' => 'index.php'],
     ['file' => 'index.php', 'icon' => '🛒', 'label' => 'orders', 'path' => 'orders/index.php', 'dir' => 'orders', 'roles' => ['admin', 'manager', 'sales']],
     ['file' => 'index.php', 'icon' => '📦', 'label' => 'inventory', 'path' => 'inventory/index.php', 'dir' => 'inventory', 'roles' => ['admin', 'manager', 'staff', 'sales']],
+    ['file' => 'index.php', 'icon' => '🛍️', 'label' => 'purchases', 'path' => 'purchases/index.php', 'dir' => 'purchases', 'roles' => ['admin', 'manager']],
     ['file' => 'index.php', 'icon' => '🧾', 'label' => 'invoices', 'path' => 'invoices/index.php', 'dir' => 'invoices'],
     ['file' => 'index.php', 'icon' => '👥', 'label' => 'hr', 'path' => 'hr/index.php', 'dir' => 'hr'],
     ['file' => 'index.php', 'icon' => '🚚', 'label' => 'delivery', 'path' => 'delivery/index.php', 'dir' => 'delivery'],
@@ -46,3 +47,4 @@ $userRole = $_SESSION['user_role'] ?? 'staff';
         </a>
     </div>
 </aside>
+<div class="sidebar-backdrop" id="sidebarBackdrop" aria-hidden="true"></div>
