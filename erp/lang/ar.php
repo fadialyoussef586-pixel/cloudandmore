@@ -106,6 +106,7 @@ return [
     'success_saved' => 'تم الحفظ بنجاح',
     'success_deleted' => 'تم الحذف بنجاح',
     'error' => 'حدث خطأ',
+    'invalid_credentials' => 'البريد أو كلمة المرور غير صحيحة',
     'confirm_delete' => 'هل أنت متأكد من الحذف؟',
     'phone' => 'الهاتف',
     'notes' => 'ملاحظات',
@@ -236,4 +237,5 @@ return [
     'reset_data_type_reset' => 'اكتب RESET للتأكيد',
     'reset_data_confirm_js' => 'حذف كل البيانات؟ لا يمكن التراجع.',
     'reset_data_done' => 'تم تصفير كل البيانات',
+    'login_setup_link' => 'إصلاح الدخول / تصفير (setup)',
 ];

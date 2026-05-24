@@ -238,4 +238,5 @@ return [
     'reset_data_type_reset' => 'Type RESET to confirm',
     'reset_data_confirm_js' => 'Delete ALL data? This cannot be undone.',
     'reset_data_done' => 'All data has been reset',
+    'login_setup_link' => 'Fix login / reset account (setup)',
 ];
