@@ -13,7 +13,7 @@ $stats = [
     'invoices' => (int) db()->query('SELECT COUNT(*) FROM invoices')->fetchColumn(),
     'deliveries' => (int) db()->query("SELECT COUNT(*) FROM deliveries WHERE status IN ('pending','in_transit')")->fetchColumn(),
     'employees' => (int) db()->query("SELECT COUNT(*) FROM employees WHERE status = 'active'")->fetchColumn(),
-    'revenue' => (float) db()->query("SELECT COALESCE(SUM(total),0) FROM invoices WHERE status = 'paid' AND MONTH(created_at) = MONTH(CURRENT_DATE()) AND YEAR(created_at) = YEAR(CURRENT_DATE())")->fetchColumn(),
+    'revenue' => (float) db()->query("SELECT COALESCE(SUM(total),0) FROM invoices WHERE status = 'paid' AND strftime('%m', created_at) = strftime('%m', 'now') AND strftime('%Y', created_at) = strftime('%Y', 'now')")->fetchColumn(),
 ];
 
 $recentOrders = db()->query("SELECT * FROM orders ORDER BY created_at DESC LIMIT 5")->fetchAll();

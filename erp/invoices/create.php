@@ -32,7 +32,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $pdo->prepare('INSERT INTO invoice_items (invoice_id, product_id, description, quantity, unit_price, total) VALUES (?,?,?,?,?,?)')
                 ->execute([$invoiceId, $productId, $item['description'], (int)$item['quantity'], (float)$item['unit_price'], $lineTotal]);
             if ($productId && ($_POST['status'] ?? '') === 'paid') {
-                $pdo->prepare('UPDATE products SET quantity = GREATEST(0, quantity - ?) WHERE id = ?')->execute([(int)$item['quantity'], $productId]);
+                $pdo->prepare('UPDATE products SET quantity = CASE WHEN quantity - ? < 0 THEN 0 ELSE quantity - ? END WHERE id = ?')->execute([(int)$item['quantity'], (int)$item['quantity'], $productId]);
             }
         }
         $pdo->commit();

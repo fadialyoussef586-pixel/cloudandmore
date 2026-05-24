@@ -14,38 +14,37 @@ $checks[] = [
 ];
 
 $checks[] = [
-    'label' => 'PDO MySQL',
-    'ok' => extension_loaded('pdo_mysql'),
-    'detail' => extension_loaded('pdo_mysql') ? 'مفعّل' : 'غير مفعّل — ثبّت pdo_mysql',
+    'label' => 'PDO SQLite',
+    'ok' => extension_loaded('pdo_sqlite'),
+    'detail' => extension_loaded('pdo_sqlite') ? 'مفعّل' : 'غير مفعّل — ثبّت pdo_sqlite',
 ];
 
 $checks[] = [
-    'label' => 'مجلد المشروع',
-    'ok' => is_dir(BASE_PATH),
-    'detail' => BASE_PATH,
+    'label' => 'مجلد database',
+    'ok' => is_dir(DB_DIR) && is_writable(DB_DIR),
+    'detail' => DB_DIR,
 ];
 
 $checks[] = [
     'label' => 'BASE_URL (للروابط)',
     'ok' => true,
-    'detail' => BASE_URL === '' ? '(فارغ = جذر السيرفر — صحيح مع php -S من مجلد erp)' : BASE_URL,
+    'detail' => BASE_URL === '' ? '(فارغ = جذر السيرفر)' : BASE_URL,
 ];
 
 $dbOk = false;
 $dbDetail = '';
 try {
-    $dsn = 'mysql:host=' . DB_HOST . ';charset=' . DB_CHARSET;
-    $pdo = new PDO($dsn, DB_USER, DB_PASS, [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]);
-    $pdo->exec('USE `' . DB_NAME . '`');
-    $tables = $pdo->query("SHOW TABLES LIKE 'users'")->fetch();
-    $dbOk = (bool) $tables;
-    $dbDetail = $dbOk ? 'متصل — الجداول موجودة' : 'متصل — شغّل setup.php لإنشاء الجداول';
+    $pdo = db();
+    $dbOk = databaseTableExists($pdo, 'users');
+    $dbDetail = $dbOk
+        ? 'متصل — ' . DB_FILE . ' (' . (file_exists(DB_PATH) ? 'موجود' : 'جديد') . ')'
+        : 'متصل — شغّل setup.php لإنشاء الجداول';
 } catch (Throwable $e) {
     $dbDetail = $e->getMessage();
 }
 
 $checks[] = [
-    'label' => 'MySQL',
+    'label' => 'SQLite',
     'ok' => $dbOk,
     'detail' => $dbDetail,
 ];

@@ -19,7 +19,7 @@ if ($type === 'sales') {
 } elseif ($type === 'inventory') {
     $inventory = db()->query('SELECT * FROM products ORDER BY quantity ASC')->fetchAll();
 } elseif ($type === 'payroll') {
-    $stmt = db()->prepare('SELECT p.*, e.name_ar, e.name_en, e.employee_code FROM payroll p JOIN employees e ON e.id = p.employee_id WHERE CONCAT(p.year, LPAD(p.month,2,"0")) BETWEEN DATE_FORMAT(?,"%Y%m") AND DATE_FORMAT(?,"%Y%m")');
+    $stmt = db()->prepare("SELECT p.*, e.name_ar, e.name_en, e.employee_code FROM payroll p JOIN employees e ON e.id = p.employee_id WHERE printf('%04d%02d', p.year, p.month) BETWEEN strftime('%Y%m', ?) AND strftime('%Y%m', ?)");
     $stmt->execute([$from, $to]);
     $payroll = $stmt->fetchAll();
 } elseif ($type === 'delivery') {

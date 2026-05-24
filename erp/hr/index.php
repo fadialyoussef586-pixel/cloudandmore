@@ -4,7 +4,7 @@ require_once __DIR__ . '/../includes/auth.php';
 requireAuth();
 $pageTitle = __('hr');
 $employees = db()->query("SELECT * FROM employees WHERE status = 'active' ORDER BY name_en")->fetchAll();
-$payrollTotal = (float) db()->query("SELECT COALESCE(SUM(net_salary),0) FROM payroll WHERE month = MONTH(CURRENT_DATE()) AND year = YEAR(CURRENT_DATE())")->fetchColumn();
+$payrollTotal = (float) db()->query("SELECT COALESCE(SUM(net_salary),0) FROM payroll WHERE month = CAST(strftime('%m', 'now') AS INTEGER) AND year = CAST(strftime('%Y', 'now') AS INTEGER)")->fetchColumn();
 require __DIR__ . '/../includes/header.php';
 ?>
 <div class="stats-grid">
