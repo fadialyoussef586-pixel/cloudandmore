@@ -6,8 +6,11 @@ requireAuth();
 
 ensureTreasuryTables();
 $pdo = db();
-$treasuryBal = treasuryBalanceFromDb($pdo);
-$monthlyRevenue = monthlyRevenue($pdo);
+
+$invoiceCount = (int) $pdo->query('SELECT COUNT(*) FROM invoices')->fetchColumn();
+$treasuryRowCount = (int) $pdo->query('SELECT COUNT(*) FROM treasury_transactions')->fetchColumn();
+$monthlyRevenue = $invoiceCount === 0 ? 0.0 : monthlyRevenue($pdo);
+$treasuryBal = $treasuryRowCount === 0 ? 0.0 : treasuryBalanceFromDb($pdo);
 
 $pageTitle = __('dashboard');
 
@@ -15,11 +18,12 @@ $stats = [
     'products' => (int) $pdo->query('SELECT COUNT(*) FROM products')->fetchColumn(),
     'low_stock' => (int) $pdo->query('SELECT COUNT(*) FROM products WHERE quantity <= min_stock')->fetchColumn(),
     'orders' => (int) $pdo->query("SELECT COUNT(*) FROM orders WHERE status = 'new'")->fetchColumn(),
-    'invoices' => (int) $pdo->query('SELECT COUNT(*) FROM invoices')->fetchColumn(),
+    'invoices' => $invoiceCount,
     'deliveries' => (int) $pdo->query("SELECT COUNT(*) FROM deliveries WHERE status IN ('pending','in_transit')")->fetchColumn(),
     'employees' => (int) $pdo->query("SELECT COUNT(*) FROM employees WHERE status = 'active'")->fetchColumn(),
     'revenue' => $monthlyRevenue,
     'treasury' => $treasuryBal,
+    'treasury_rows' => $treasuryRowCount,
 ];
 
 $recentOrders = db()->query("SELECT * FROM orders ORDER BY created_at DESC LIMIT 5")->fetchAll();

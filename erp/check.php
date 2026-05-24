@@ -1,7 +1,9 @@
 <?php
 
 header('Content-Type: text/html; charset=utf-8');
+header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
 require_once __DIR__ . '/includes/functions.php';
+require_once __DIR__ . '/includes/data_reset.php';
 
 $checks = [];
 
@@ -47,8 +49,30 @@ $checks[] = [
     'detail' => $dbDetail,
 ];
 
+$financialDetail = 'N/A';
+try {
+    $pdo = db();
+    $fin = financialTotals($pdo);
+    $financialDetail = sprintf(
+        'Invoices: %d | Treasury rows: %d | Revenue: %s | Treasury: %s',
+        $fin['invoices'],
+        $fin['treasury_rows'],
+        number_format($fin['revenue'], 2) . ' USD',
+        number_format($fin['treasury'], 2) . ' USD'
+    );
+} catch (Throwable $e) {
+    $financialDetail = $e->getMessage();
+}
+
+$checks[] = [
+    'label' => 'Financial data (live DB)',
+    'ok' => isset($fin) && $fin['revenue'] == 0.0 && $fin['treasury'] == 0.0,
+    'detail' => $financialDetail,
+];
+
 $loginUrl = url('login.php');
 $setupUrl = url('setup.php');
+$fixZeroUrl = url('fix-zero.php');
 $shopUrl = shopUrl();
 ?>
 <!DOCTYPE html>
@@ -86,6 +110,7 @@ $shopUrl = shopUrl();
 
     <div class="links">
         <a href="<?= htmlspecialchars($setupUrl) ?>">setup.php — Install database</a>
+        <a href="<?= htmlspecialchars($fixZeroUrl) ?>">fix-zero.php — Full reset</a>
         <a href="<?= htmlspecialchars($loginUrl) ?>">Login</a>
         <a href="<?= htmlspecialchars($shopUrl) ?>" class="secondary">Shop</a>
     </div>

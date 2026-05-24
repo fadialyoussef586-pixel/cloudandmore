@@ -85,7 +85,8 @@ require_once __DIR__ . '/includes/functions.php';
 
             <h2 style="font-size:1rem;margin-bottom:0.5rem">تصفير كل البيانات</h2>
             <p class="text-muted" style="font-size:0.85rem;margin-bottom:1rem">
-                يحذف المنتجات والفواتير والموظفين والخزنة. يبقى حساب المالك فقط.
+                يحذف: المنتجات، الفواتير، إيرادات الشهر، حركات الخزنة (treasury_transactions)، الموظفين.
+                يبقى حساب المالك فقط.
             </p>
             <form method="post" onsubmit="return confirm('حذف كل البيانات؟')">
                 <div class="form-group">

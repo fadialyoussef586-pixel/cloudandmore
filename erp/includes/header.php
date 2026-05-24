@@ -1,7 +1,11 @@
 <?php
 requireAuth();
+header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
+header('Pragma: no-cache');
+header('Expires: 0');
 $currentUser = currentUser();
 $pageTitle = $pageTitle ?? __('dashboard');
+$assetVersion = APP_VERSION . '-' . (@filemtime(BASE_PATH . '/assets/css/app.css') ?: time());
 ?>
 <!DOCTYPE html>
 <html lang="<?= lang() ?>" dir="<?= isRtl() ? 'rtl' : 'ltr' ?>">
@@ -12,7 +16,7 @@ $pageTitle = $pageTitle ?? __('dashboard');
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="<?= asset('css/app.css') ?>">
+    <link rel="stylesheet" href="<?= asset('css/app.css') ?>?v=<?= e((string) $assetVersion) ?>">
     <link rel="icon" href="<?= e(companyLogoUrl()) ?>" type="image/png">
 </head>
 <body>

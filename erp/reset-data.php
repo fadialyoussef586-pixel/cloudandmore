@@ -32,9 +32,9 @@ require __DIR__ . '/includes/header.php';
         <p class="text-muted"><?= e(__('reset_data_hint')) ?></p>
         <ul class="text-muted" style="margin:1rem 0;padding-inline-start:1.25rem">
             <li><?= e(__('inventory')) ?></li>
-            <li><?= e(__('invoices')) ?></li>
+            <li><?= e(__('invoices')) ?> + <?= e(__('revenue_month')) ?></li>
+            <li><?= e(__('treasury_balance')) ?> (treasury_transactions)</li>
             <li><?= e(__('employees')) ?></li>
-            <li><?= e(__('treasury')) ?></li>
             <li><?= e(__('orders')) ?></li>
         </ul>
         <p><strong><?= e(__('reset_data_keeps')) ?>:</strong> <?= e(ownerEmail()) ?></p>
