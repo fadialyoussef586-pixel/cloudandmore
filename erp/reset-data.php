@@ -2,42 +2,16 @@
 
 require_once __DIR__ . '/includes/functions.php';
 require_once __DIR__ . '/includes/auth.php';
+require_once __DIR__ . '/includes/data_reset.php';
 
 requireOwner();
 
 $pageTitle = __('reset_data');
-$done = false;
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['confirm'] ?? '') === 'RESET') {
     $pdo = db();
-    $owner = ownerEmail();
-    $tables = [
-        'supplier_debt_payments',
-        'purchases',
-        'suppliers',
-        'treasury_transactions',
-        'exchange_rates',
-        'delivery_items',
-        'deliveries',
-        'order_items',
-        'orders',
-        'invoice_items',
-        'invoices',
-        'stock_movements',
-        'products',
-        'customers',
-        'payroll',
-        'employees',
-    ];
-
-    $pdo->exec('SET FOREIGN_KEY_CHECKS = 0');
-    foreach ($tables as $table) {
-        $pdo->exec('TRUNCATE TABLE `' . $table . '`');
-    }
-    $pdo->prepare('DELETE FROM users WHERE LOWER(email) <> ?')->execute([$owner]);
-    $pdo->exec('SET FOREIGN_KEY_CHECKS = 1');
-
-    $done = true;
+    resetBusinessData($pdo);
+    ensureOwnerAccount($pdo);
     flash('success', __('reset_data_done'));
     redirect(url('index.php'));
 }

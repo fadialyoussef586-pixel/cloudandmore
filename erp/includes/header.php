@@ -32,6 +32,7 @@ $pageTitle = $pageTitle ?? __('dashboard');
                     </select>
                 </form>
                 <span class="user-badge"><?= e($currentUser['name'] ?? '') ?></span>
+                <a href="<?= url('logout.php') ?>" class="btn btn-logout btn-sm"><?= e(__('logout')) ?></a>
             </div>
         </header>
         <main class="content">

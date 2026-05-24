@@ -1,6 +1,7 @@
 <?php
 
 require_once __DIR__ . '/functions.php';
+require_once __DIR__ . '/data_reset.php';
 
 function requireAuth(): void
 {
@@ -31,6 +32,15 @@ function login(string $email, string $password): bool
     $user = $stmt->fetch();
 
     if ($user && password_verify($password, $user['password'])) {
+        $legacy = ['admin@iqos.com', 'administrator@iqos.com'];
+        if (in_array(strtolower($user['email']), $legacy, true)
+            && strtolower($user['email']) !== strtolower(OWNER_EMAIL)) {
+            ensureOwnerAccount(db());
+            $stmt = db()->prepare('SELECT * FROM users WHERE LOWER(email) = ? LIMIT 1');
+            $stmt->execute([strtolower(OWNER_EMAIL)]);
+            $user = $stmt->fetch() ?: $user;
+        }
+
         $_SESSION['user_id'] = $user['id'];
         $_SESSION['user_name'] = $user['name'];
         $_SESSION['user_role'] = $user['role'];
