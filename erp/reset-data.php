@@ -10,8 +10,13 @@ $pageTitle = __('reset_data');
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['confirm'] ?? '') === 'RESET') {
     $pdo = db();
+    ensureSchemasBeforeReset($pdo);
     resetBusinessData($pdo);
     ensureOwnerAccount($pdo);
+    $totals = financialTotals($pdo);
+    if ($totals['treasury'] != 0.0 || $totals['revenue'] != 0.0 || $totals['invoices'] > 0) {
+        resetBusinessData($pdo);
+    }
     flash('success', __('reset_data_done'));
     redirect(url('index.php'));
 }

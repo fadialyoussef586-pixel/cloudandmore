@@ -1,5 +1,7 @@
 <?php
 
+require_once __DIR__ . '/../config/database.php';
+
 function businessDataTables(): array
 {
     return [
@@ -22,13 +24,68 @@ function businessDataTables(): array
     ];
 }
 
+function clearTable(PDO $pdo, string $table): void
+{
+    if (!databaseTableExists($pdo, $table)) {
+        return;
+    }
+
+    try {
+        $pdo->exec('TRUNCATE TABLE `' . $table . '`');
+    } catch (PDOException) {
+        $pdo->exec('DELETE FROM `' . $table . '`');
+        try {
+            $pdo->exec('ALTER TABLE `' . $table . '` AUTO_INCREMENT = 1');
+        } catch (PDOException) {
+            // ignore
+        }
+    }
+}
+
 function resetBusinessData(PDO $pdo): void
 {
     $pdo->exec('SET FOREIGN_KEY_CHECKS = 0');
     foreach (businessDataTables() as $table) {
-        $pdo->exec('TRUNCATE TABLE `' . $table . '`');
+        clearTable($pdo, $table);
     }
     $pdo->exec('SET FOREIGN_KEY_CHECKS = 1');
+
+    // تأكيد إضافي: الخزنة والإيرادات = صفر
+    foreach (['treasury_transactions', 'invoice_items', 'invoices', 'orders', 'order_items', 'purchases', 'supplier_debt_payments'] as $table) {
+        if (databaseTableExists($pdo, $table)) {
+            $pdo->exec('DELETE FROM `' . $table . '`');
+        }
+    }
+}
+
+function financialTotals(PDO $pdo): array
+{
+    $treasury = 0.0;
+    $revenue = 0.0;
+    $invoices = 0;
+
+    if (databaseTableExists($pdo, 'treasury_transactions')) {
+        $treasury = (float) $pdo->query(
+            "SELECT COALESCE(SUM(CASE WHEN type = 'deposit' THEN amount_sar ELSE -amount_sar END), 0)
+             FROM treasury_transactions"
+        )->fetchColumn();
+    }
+
+    if (databaseTableExists($pdo, 'invoices')) {
+        $revenue = (float) $pdo->query(
+            "SELECT COALESCE(SUM(total), 0) FROM invoices
+             WHERE status = 'paid'
+               AND MONTH(created_at) = MONTH(CURRENT_DATE())
+               AND YEAR(created_at) = YEAR(CURRENT_DATE())"
+        )->fetchColumn();
+        $invoices = (int) $pdo->query('SELECT COUNT(*) FROM invoices')->fetchColumn();
+    }
+
+    return [
+        'treasury' => $treasury,
+        'revenue' => $revenue,
+        'invoices' => $invoices,
+    ];
 }
 
 function ownerAccountPayload(): array
@@ -110,4 +167,20 @@ function removeDemoUsers(PDO $pdo): int
     }
 
     return $removed;
+}
+
+function ensureSchemasBeforeReset(PDO $pdo): void
+{
+    $files = [
+        __DIR__ . '/../database/migrate_currency_treasury.sql',
+        __DIR__ . '/../database/migrate_invoice_simple.sql',
+        __DIR__ . '/../database/migrate_purchases.sql',
+        __DIR__ . '/../database/migrate_shop.sql',
+        __DIR__ . '/../database/migrate_permissions.sql',
+    ];
+    foreach ($files as $path) {
+        if (is_file($path)) {
+            runSqlFile($pdo, $path);
+        }
+    }
 }

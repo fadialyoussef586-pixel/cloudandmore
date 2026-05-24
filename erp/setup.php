@@ -35,8 +35,13 @@ try {
         || (isset($_GET['reset']) && $_GET['reset'] === 'RESET');
 
     if ($wantReset) {
+        ensureSchemasBeforeReset($pdo);
         resetBusinessData($pdo);
         ensureOwnerAccount($pdo);
+        $totals = financialTotals($pdo);
+        if ($totals['treasury'] != 0.0 || $totals['revenue'] != 0.0 || $totals['invoices'] > 0) {
+            resetBusinessData($pdo);
+        }
         $didReset = true;
     }
 
