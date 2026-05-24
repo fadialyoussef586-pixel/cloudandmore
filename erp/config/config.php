@@ -44,3 +44,8 @@ if (!defined('APP_LANG_DEFAULT')) {
 
 // شعار الشركة: ملف محلي في assets/img/ أو رابط COMPANY_LOGO_URL
 define('COMPANY_LOGO_URL', getenv('COMPANY_LOGO_URL') ?: '');
+
+// حساب المالك — الحذف وإدارة المستخدمين (يمكن تجاوزه بـ OWNER_EMAIL على Render)
+if (!defined('OWNER_EMAIL')) {
+    define('OWNER_EMAIL', strtolower(trim(getenv('OWNER_EMAIL') ?: 'fadialyoussef586@gmail.com')));
+}

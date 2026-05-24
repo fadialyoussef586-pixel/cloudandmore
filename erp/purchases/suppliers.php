@@ -3,7 +3,7 @@
 require_once __DIR__ . '/../includes/functions.php';
 require_once __DIR__ . '/../includes/auth.php';
 requireAuth();
-requireRole(['admin', 'manager']);
+requirePermission(PERM_PURCHASES);
 
 ensurePurchaseSchema();
 
@@ -25,6 +25,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'add')
 }
 
 if (isset($_GET['delete'])) {
+    requireDelete();
     $id = (int) $_GET['delete'];
     $debt = supplierDebtBalance($id);
     if ($debt > 0) {
@@ -104,7 +105,7 @@ require __DIR__ . '/../includes/header.php';
                         <?= formatMoney($debt) ?>
                     </td>
                     <td>
-                        <?php if ($debt <= 0): ?>
+                        <?php if ($debt <= 0 && canDelete()): ?>
                         <a href="<?= url('purchases/suppliers.php?delete=' . $s['id']) ?>"
                            class="btn btn-danger btn-sm"
                            data-confirm="<?= e(__('confirm_delete')) ?>"><?= e(__('delete')) ?></a>

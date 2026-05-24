@@ -18,21 +18,32 @@ try {
 
     runSqlFile($pdo, __DIR__ . '/database/migrate_purchases.sql');
 
+    $migratePerm = __DIR__ . '/database/migrate_permissions.sql';
+    if (is_file($migratePerm)) {
+        runSqlFile($pdo, $migratePerm);
+    }
+
+    $ownerEmail = OWNER_EMAIL;
     $hash = password_hash('admin123', PASSWORD_DEFAULT);
-    $demoUsers = [
-        ['Administrator', 'admin@iqos.com', 'admin'],
-        ['Sales Staff', 'sales@iqos.com', 'sales'],
-        ['Delivery Driver', 'driver@iqos.com', 'driver'],
-    ];
-    foreach ($demoUsers as [$name, $email, $role]) {
-        $stmt = $pdo->prepare('SELECT COUNT(*) FROM users WHERE email = ?');
-        $stmt->execute([$email]);
-        if ((int) $stmt->fetchColumn() === 0) {
-            $pdo->prepare('INSERT INTO users (name, email, password, role) VALUES (?, ?, ?, ?)')
-                ->execute([$name, $email, $hash, $role]);
+    $allPerms = json_encode([
+        'orders', 'inventory', 'purchases', 'invoices', 'hr', 'delivery', 'treasury', 'reports',
+    ]);
+    $stmt = $pdo->prepare('SELECT COUNT(*) FROM users WHERE email = ?');
+    $stmt->execute([$ownerEmail]);
+    if ((int) $stmt->fetchColumn() === 0) {
+        $legacy = $pdo->prepare('SELECT id FROM users WHERE email = ? LIMIT 1');
+        $legacy->execute(['admin@iqos.com']);
+        $legacyUser = $legacy->fetch();
+        if ($legacyUser) {
+            $pdo->prepare('UPDATE users SET name = ?, email = ?, password = ?, role = ?, permissions = ? WHERE id = ?')
+                ->execute(['Administrator', $ownerEmail, $hash, 'admin', $allPerms, $legacyUser['id']]);
         } else {
-            $pdo->prepare('UPDATE users SET password = ?, role = ? WHERE email = ?')->execute([$hash, $role, $email]);
+            $pdo->prepare('INSERT INTO users (name, email, password, role, permissions) VALUES (?, ?, ?, ?, ?)')
+                ->execute(['Administrator', $ownerEmail, $hash, 'admin', $allPerms]);
         }
+    } else {
+        $pdo->prepare('UPDATE users SET password = ?, role = ?, permissions = ? WHERE email = ?')
+            ->execute([$hash, 'admin', $allPerms, $ownerEmail]);
     }
 
     $migratePath = __DIR__ . '/database/migrate_shop.sql';
@@ -41,7 +52,7 @@ try {
     }
 
     $installed = true;
-    $message = 'MySQL database ready. Logins: admin@iqos.com / sales@iqos.com / driver@iqos.com — password: admin123';
+    $message = 'Database ready. Owner login: ' . $ownerEmail . ' — password: admin123 (change after first login).';
 } catch (Throwable $e) {
     $error = $e->getMessage();
 }

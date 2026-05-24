@@ -2,6 +2,7 @@
 require_once __DIR__ . '/../includes/functions.php';
 require_once __DIR__ . '/../includes/auth.php';
 requireAuth();
+requirePermission(PERM_DELIVERY);
 $pageTitle = __('delivery');
 $deliveries = db()->query("SELECT d.*, c.name AS customer_name FROM deliveries d LEFT JOIN customers c ON c.id = d.customer_id ORDER BY d.created_at DESC")->fetchAll();
 require __DIR__ . '/../includes/header.php';

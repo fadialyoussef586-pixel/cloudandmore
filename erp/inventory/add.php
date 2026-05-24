@@ -3,6 +3,7 @@
 require_once __DIR__ . '/../includes/functions.php';
 require_once __DIR__ . '/../includes/auth.php';
 requireAuth();
+requirePermission(PERM_INVENTORY);
 $pageTitle = __('add_product');
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {

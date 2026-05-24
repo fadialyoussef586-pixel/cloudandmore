@@ -2,6 +2,7 @@
 require_once __DIR__ . '/../includes/functions.php';
 require_once __DIR__ . '/../includes/auth.php';
 requireAuth();
+requirePermission(PERM_ORDERS);
 if (!canAccessOrders()) { redirect(homeUrlForRole($_SESSION['user_role'] ?? '')); }
 $pageTitle = __('sales_orders');
 

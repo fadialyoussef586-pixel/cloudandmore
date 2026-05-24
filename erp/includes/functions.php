@@ -7,8 +7,10 @@ require_once __DIR__ . '/currency.php';
 require_once __DIR__ . '/invoice_helpers.php';
 require_once __DIR__ . '/purchase_helpers.php';
 require_once __DIR__ . '/quick_actions.php';
+require_once __DIR__ . '/permissions.php';
 
 session_start();
+ensureUserPermissionsSchema();
 
 $defaultLang = defined('APP_LANG_DEFAULT') ? APP_LANG_DEFAULT : 'en';
 $lang = $_SESSION['lang'] ?? ($_COOKIE['lang'] ?? $defaultLang);

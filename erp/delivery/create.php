@@ -2,6 +2,7 @@
 require_once __DIR__ . '/../includes/functions.php';
 require_once __DIR__ . '/../includes/auth.php';
 requireAuth();
+requirePermission(PERM_DELIVERY);
 $pageTitle = __('create_delivery');
 $customers = db()->query('SELECT * FROM customers ORDER BY name')->fetchAll();
 $invoices = db()->query("SELECT id, invoice_number FROM invoices ORDER BY created_at DESC LIMIT 20")->fetchAll();

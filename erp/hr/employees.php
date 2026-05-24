@@ -2,7 +2,9 @@
 require_once __DIR__ . '/../includes/functions.php';
 require_once __DIR__ . '/../includes/auth.php';
 requireAuth();
+requirePermission(PERM_HR);
 $pageTitle = __('employees');
+$hrTab = 'employees';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'add') {
     db()->prepare('INSERT INTO employees (employee_code, name_ar, name_en, email, phone, department, job_title, salary, hire_date, status) VALUES (?,?,?,?,?,?,?,?,?,?)')
@@ -16,7 +18,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'add')
 }
 
 if (isset($_GET['delete'])) {
-    db()->prepare("UPDATE employees SET status = 'terminated' WHERE id = ?")->execute([(int)$_GET['delete']]);
+    requireDelete();
+    db()->prepare("UPDATE employees SET status = 'terminated' WHERE id = ?")->execute([(int) $_GET['delete']]);
     flash('success', __('success_deleted'));
     redirect(url('hr/employees.php'));
 }
@@ -24,6 +27,7 @@ if (isset($_GET['delete'])) {
 $employees = db()->query('SELECT * FROM employees ORDER BY name_en')->fetchAll();
 $showAdd = isset($_GET['action']) && $_GET['action'] === 'add';
 require __DIR__ . '/../includes/header.php';
+require __DIR__ . '/_tabs.php';
 ?>
 <div class="page-actions"><span></span><a href="<?= url('hr/employees.php?action=add') ?>" class="btn btn-primary"><?= e(__('add_employee')) ?></a></div>
 <?php if ($showAdd): ?>
@@ -52,7 +56,7 @@ require __DIR__ . '/../includes/header.php';
 <tr>
 <td><?= e($e['employee_code']) ?></td><td><?= e(employeeName($e)) ?></td><td><?= e($e['department']) ?></td>
 <td><?= statusBadge($e['status']) ?></td>
-<td><?php if ($e['status'] === 'active'): ?><a href="<?= url('hr/employees.php?delete='.$e['id']) ?>" class="btn btn-danger btn-sm" data-confirm="<?= e(__('confirm_delete')) ?>"><?= e(__('delete')) ?></a><?php endif; ?></td>
+<td><?php if ($e['status'] === 'active' && canDelete()): ?><a href="<?= url('hr/employees.php?delete='.$e['id']) ?>" class="btn btn-danger btn-sm" data-confirm="<?= e(__('confirm_delete')) ?>"><?= e(__('delete')) ?></a><?php endif; ?></td>
 </tr>
 <?php endforeach; ?>
 </tbody></table>

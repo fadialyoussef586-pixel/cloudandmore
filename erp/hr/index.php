@@ -2,7 +2,9 @@
 require_once __DIR__ . '/../includes/functions.php';
 require_once __DIR__ . '/../includes/auth.php';
 requireAuth();
+requirePermission(PERM_HR);
 $pageTitle = __('hr');
+$hrTab = 'overview';
 $employees = db()->query("SELECT * FROM employees WHERE status = 'active' ORDER BY name_en")->fetchAll();
 $payrollTotal = (float) db()->query("SELECT COALESCE(SUM(net_salary),0) FROM payroll WHERE month = MONTH(CURRENT_DATE()) AND year = YEAR(CURRENT_DATE())")->fetchColumn();
 require __DIR__ . '/../includes/header.php';
@@ -17,11 +19,7 @@ require __DIR__ . '/../includes/header.php';
         <div class="value"><?= formatMoney($payrollTotal) ?></div>
     </div>
 </div>
-<div class="tabs">
-    <a href="<?= url('hr/index.php') ?>" class="tab active"><?= e(__('overview')) ?></a>
-    <a href="<?= url('hr/employees.php') ?>" class="tab"><?= e(__('employees')) ?></a>
-    <a href="<?= url('hr/payroll.php') ?>" class="tab"><?= e(__('payroll')) ?></a>
-</div>
+<?php require __DIR__ . '/_tabs.php'; ?>
 <div class="card">
     <div class="card-header"><h2><?= e(__('employees')) ?></h2></div>
     <div class="card-body table-wrap">

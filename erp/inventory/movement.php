@@ -2,6 +2,7 @@
 require_once __DIR__ . '/../includes/functions.php';
 require_once __DIR__ . '/../includes/auth.php';
 requireAuth();
+requirePermission(PERM_INVENTORY);
 
 $pageTitle = __('movements');
 $productId = (int) ($_GET['product_id'] ?? 0);

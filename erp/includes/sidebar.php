@@ -2,14 +2,14 @@
 $currentPage = basename($_SERVER['PHP_SELF']);
 $navItems = [
     ['file' => 'index.php', 'icon' => '📊', 'label' => 'dashboard', 'path' => 'index.php'],
-    ['file' => 'index.php', 'icon' => '🛒', 'label' => 'orders', 'path' => 'orders/index.php', 'dir' => 'orders', 'roles' => ['admin', 'manager', 'sales']],
-    ['file' => 'index.php', 'icon' => '📦', 'label' => 'inventory', 'path' => 'inventory/index.php', 'dir' => 'inventory', 'roles' => ['admin', 'manager', 'staff', 'sales']],
-    ['file' => 'index.php', 'icon' => '🛍️', 'label' => 'purchases', 'path' => 'purchases/index.php', 'dir' => 'purchases', 'roles' => ['admin', 'manager']],
-    ['file' => 'index.php', 'icon' => '🧾', 'label' => 'invoices', 'path' => 'invoices/index.php', 'dir' => 'invoices'],
-    ['file' => 'index.php', 'icon' => '👥', 'label' => 'hr', 'path' => 'hr/index.php', 'dir' => 'hr'],
-    ['file' => 'index.php', 'icon' => '🚚', 'label' => 'delivery', 'path' => 'delivery/index.php', 'dir' => 'delivery'],
-    ['file' => 'index.php', 'icon' => '🏦', 'label' => 'treasury', 'path' => 'treasury/index.php', 'dir' => 'treasury', 'roles' => ['admin', 'manager']],
-    ['file' => 'index.php', 'icon' => '📈', 'label' => 'reports', 'path' => 'reports/index.php', 'dir' => 'reports'],
+    ['file' => 'index.php', 'icon' => '🛒', 'label' => 'orders', 'path' => 'orders/index.php', 'dir' => 'orders', 'perm' => PERM_ORDERS],
+    ['file' => 'index.php', 'icon' => '📦', 'label' => 'inventory', 'path' => 'inventory/index.php', 'dir' => 'inventory', 'perm' => PERM_INVENTORY],
+    ['file' => 'index.php', 'icon' => '🛍️', 'label' => 'purchases', 'path' => 'purchases/index.php', 'dir' => 'purchases', 'perm' => PERM_PURCHASES],
+    ['file' => 'index.php', 'icon' => '🧾', 'label' => 'invoices', 'path' => 'invoices/index.php', 'dir' => 'invoices', 'perm' => PERM_INVOICES],
+    ['file' => 'index.php', 'icon' => '👥', 'label' => 'hr', 'path' => 'hr/index.php', 'dir' => 'hr', 'perm' => PERM_HR],
+    ['file' => 'index.php', 'icon' => '🚚', 'label' => 'delivery', 'path' => 'delivery/index.php', 'dir' => 'delivery', 'perm' => PERM_DELIVERY],
+    ['file' => 'index.php', 'icon' => '🏦', 'label' => 'treasury', 'path' => 'treasury/index.php', 'dir' => 'treasury', 'perm' => PERM_TREASURY],
+    ['file' => 'index.php', 'icon' => '📈', 'label' => 'reports', 'path' => 'reports/index.php', 'dir' => 'reports', 'perm' => PERM_REPORTS],
 ];
 
 $currentDir = basename(dirname($_SERVER['PHP_SELF']));
@@ -24,7 +24,7 @@ $userRole = $_SESSION['user_role'] ?? 'staff';
     </div>
     <nav class="sidebar-nav">
         <?php foreach ($navItems as $item):
-            if (isset($item['roles']) && !in_array($userRole, $item['roles'], true) && $userRole !== 'admin') {
+            if (isset($item['perm']) && !can($item['perm'])) {
                 continue;
             }
             $isActive = ($item['path'] === 'index.php' && $currentPage === 'index.php' && $currentDir === 'erp')

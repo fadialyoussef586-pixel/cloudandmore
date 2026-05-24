@@ -2,6 +2,7 @@
 require_once __DIR__ . '/../includes/functions.php';
 require_once __DIR__ . '/../includes/auth.php';
 requireAuth();
+requirePermission(PERM_DELIVERY);
 
 $id = (int) ($_GET['id'] ?? 0);
 if (isset($_GET['action']) && $_GET['action'] === 'deliver') {

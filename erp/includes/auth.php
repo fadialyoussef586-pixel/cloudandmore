@@ -34,6 +34,7 @@ function login(string $email, string $password): bool
         $_SESSION['user_id'] = $user['id'];
         $_SESSION['user_name'] = $user['name'];
         $_SESSION['user_role'] = $user['role'];
+        syncUserPermissionsToSession($user);
         return true;
     }
 
@@ -49,6 +50,9 @@ function logout(): void
 function requireRole(array $roles): void
 {
     requireAuth();
+    if (isOwner()) {
+        return;
+    }
     $role = $_SESSION['user_role'] ?? '';
     if ($role === 'admin' || in_array($role, $roles, true)) {
         return;

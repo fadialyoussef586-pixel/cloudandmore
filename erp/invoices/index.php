@@ -3,8 +3,33 @@
 require_once __DIR__ . '/../includes/functions.php';
 require_once __DIR__ . '/../includes/auth.php';
 requireAuth();
+requirePermission(PERM_INVOICES);
 
 ensureInvoiceSchema();
+
+if (isset($_GET['delete'])) {
+    requireDelete();
+    $id = (int) $_GET['delete'];
+    $pdo = db();
+    $pdo->beginTransaction();
+    try {
+        $items = $pdo->prepare('SELECT * FROM invoice_items WHERE invoice_id = ?');
+        $items->execute([$id]);
+        foreach ($items->fetchAll() as $row) {
+            if (!empty($row['product_id'])) {
+                $pdo->prepare('UPDATE products SET quantity = quantity + ? WHERE id = ?')
+                    ->execute([(int) $row['quantity'], (int) $row['product_id']]);
+            }
+        }
+        $pdo->prepare('DELETE FROM invoices WHERE id = ?')->execute([$id]);
+        $pdo->commit();
+        flash('success', __('success_deleted'));
+    } catch (Throwable $e) {
+        $pdo->rollBack();
+        flash('error', __('error'));
+    }
+    redirect(url('invoices/index.php'));
+}
 
 $pageTitle = __('invoices');
 
@@ -52,6 +77,9 @@ require __DIR__ . '/../includes/header.php';
                     <td><?= formatDate($inv['created_at']) ?></td>
                     <td>
                         <a href="<?= url('invoices/view.php?id=' . $inv['id']) ?>" class="btn btn-secondary btn-sm"><?= e(__('view')) ?></a>
+                        <?php if (canDelete()): ?>
+                        <a href="<?= url('invoices/index.php?delete=' . $inv['id']) ?>" class="btn btn-danger btn-sm" data-confirm="<?= e(__('confirm_delete')) ?>"><?= e(__('delete')) ?></a>
+                        <?php endif; ?>
                     </td>
                 </tr>
                 <?php endforeach; ?>

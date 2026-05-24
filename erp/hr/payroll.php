@@ -2,7 +2,9 @@
 require_once __DIR__ . '/../includes/functions.php';
 require_once __DIR__ . '/../includes/auth.php';
 requireAuth();
+requirePermission(PERM_HR);
 $pageTitle = __('payroll');
+$hrTab = 'payroll';
 $month = (int) ($_GET['month'] ?? date('n'));
 $year = (int) ($_GET['year'] ?? date('Y'));
 
@@ -30,6 +32,7 @@ $payrolls->execute([$month, $year]);
 $payrolls = $payrolls->fetchAll();
 $months = months();
 require __DIR__ . '/../includes/header.php';
+require __DIR__ . '/_tabs.php';
 ?>
 <div class="card"><div class="card-body">
 <form method="get" class="search-bar">

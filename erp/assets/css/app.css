@@ -549,9 +549,133 @@ tr:hover td { background: var(--bg-hover); }
   gap: 0.35rem;
 }
 .sale-receipt-total strong { font-size: 1.35rem; }
+
+.company-logo--invoice {
+  max-height: 72px;
+  width: auto;
+  margin: 0 auto;
+}
+
+.invoice-print {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 2rem;
+}
+
+.invoice-print-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 2rem;
+  padding-bottom: 1.5rem;
+  border-bottom: 2px solid var(--border);
+  margin-bottom: 1.25rem;
+}
+
+.invoice-print-brand {
+  text-align: center;
+  flex-shrink: 0;
+}
+
+.invoice-brand-text {
+  margin: 0.5rem 0 0;
+  font-size: 1.15rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-transform: lowercase;
+}
+
+.invoice-print-meta h1 {
+  margin: 0 0 0.75rem;
+  font-size: 1.25rem;
+}
+
+.invoice-print-meta p {
+  margin: 0.25rem 0;
+  font-size: 0.9rem;
+}
+
+.invoice-print-customer {
+  margin-bottom: 1rem;
+  font-size: 0.95rem;
+}
+
+.invoice-print-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+
+.invoice-print-table th,
+.invoice-print-table td {
+  border: 1px solid var(--border);
+  padding: 0.6rem 0.75rem;
+  text-align: start;
+}
+
+.invoice-print-table th {
+  background: var(--bg-alt);
+  font-weight: 600;
+}
+
+.invoice-print-table .num {
+  text-align: end;
+  white-space: nowrap;
+}
+
+.invoice-print-table tfoot td {
+  border-top: 2px solid var(--border);
+  font-weight: 700;
+}
+
+.invoice-total-label {
+  text-align: end !important;
+}
+
+.invoice-total-value {
+  font-size: 1.1rem;
+}
+
+.invoice-print-notes {
+  margin-top: 1rem;
+  font-size: 0.9rem;
+  color: var(--muted);
+}
+
+.invoice-print-footer {
+  margin-top: 2rem;
+  padding-top: 1rem;
+  border-top: 1px dashed var(--border);
+  text-align: center;
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+.permissions-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(10rem, 1fr));
+  gap: 0.5rem 1rem;
+  margin-top: 0.5rem;
+}
+
+.permissions-fieldset {
+  margin: 1rem 0;
+  padding: 1rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+.permissions-fieldset legend {
+  padding: 0 0.5rem;
+  font-weight: 600;
+}
+
 @media print {
-  .sidebar, .topbar, .page-actions { display: none !important; }
-  .sale-receipt { border: none; box-shadow: none; }
+  .sidebar, .topbar, .page-actions, .no-print, .bottom-action-bar { display: none !important; }
+  .sale-receipt, .invoice-print { border: none; box-shadow: none; }
+  .main-content { margin: 0 !important; padding: 0 !important; }
+  .invoice-print { max-width: 100%; padding: 0; }
+  body { background: #fff; }
 }
 
 .exchange-banner {

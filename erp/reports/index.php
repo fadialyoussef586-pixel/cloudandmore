@@ -2,6 +2,7 @@
 require_once __DIR__ . '/../includes/functions.php';
 require_once __DIR__ . '/../includes/auth.php';
 requireAuth();
+requirePermission(PERM_REPORTS);
 $pageTitle = __('reports');
 
 $from = $_GET['from'] ?? date('Y-m-01');

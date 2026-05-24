@@ -3,6 +3,15 @@
 require_once __DIR__ . '/../includes/functions.php';
 require_once __DIR__ . '/../includes/auth.php';
 requireAuth();
+requirePermission(PERM_INVENTORY);
+
+if (isset($_GET['delete'])) {
+    requireDelete();
+    $id = (int) $_GET['delete'];
+    db()->prepare('DELETE FROM products WHERE id = ?')->execute([$id]);
+    flash('success', __('success_deleted'));
+    redirect(url('inventory/index.php'));
+}
 
 $pageTitle = __('inventory');
 $search = trim($_GET['q'] ?? '');
@@ -62,6 +71,9 @@ require __DIR__ . '/../includes/header.php';
                             <td>
                                 <a href="<?= url('inventory/edit.php?id=' . $product['id']) ?>" class="btn btn-secondary btn-sm"><?= e(__('edit')) ?></a>
                                 <a href="<?= url('inventory/movement.php?product_id=' . $product['id']) ?>" class="btn btn-secondary btn-sm"><?= e(__('movements')) ?></a>
+                                <?php if (canDelete()): ?>
+                                <a href="<?= url('inventory/index.php?delete=' . $product['id']) ?>" class="btn btn-danger btn-sm" data-confirm="<?= e(__('confirm_delete')) ?>"><?= e(__('delete')) ?></a>
+                                <?php endif; ?>
                             </td>
                         </tr>
                     <?php endforeach; ?>
