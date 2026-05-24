@@ -29,7 +29,7 @@ $active = $active->fetchAll();
 $pageTitle = __('driver_portal');
 ?>
 <!DOCTYPE html>
-<html lang="en" dir="ltr">
+<html lang="<?= lang() ?>" dir="<?= isRtl() ? 'rtl' : 'ltr' ?>">
 <head>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title><?= e($pageTitle) ?> | <?= e(COMPANY_NAME) ?></title>
@@ -45,7 +45,13 @@ $pageTitle = __('driver_portal');
       <small class="text-muted"><?= e($_SESSION['user_name'] ?? '') ?></small>
     </div>
   </div>
-  <div style="display:flex;gap:0.5rem">
+  <div style="display:flex;gap:0.5rem;align-items:center">
+    <form method="post" action="<?= url('set-lang.php') ?>" class="lang-switch">
+      <select name="lang" onchange="this.form.submit()" aria-label="<?= e(__('language')) ?>">
+        <option value="en" <?= lang() === 'en' ? 'selected' : '' ?>>EN</option>
+        <option value="ar" <?= lang() === 'ar' ? 'selected' : '' ?>>AR</option>
+      </select>
+    </form>
     <a href="<?= url('logout.php') ?>" class="btn btn-secondary btn-sm"><?= e(__('logout')) ?></a>
   </div>
 </header>

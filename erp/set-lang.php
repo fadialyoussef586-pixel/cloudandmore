@@ -8,7 +8,7 @@ if (isset($_GET['lang']) && in_array($_GET['lang'], ['ar', 'en'], true)) {
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $lang = $_POST['lang'] ?? 'en';
+    $lang = $_POST['lang'] ?? (defined('APP_LANG_DEFAULT') ? APP_LANG_DEFAULT : 'en');
     if (in_array($lang, ['ar', 'en'], true)) {
         $_SESSION['lang'] = $lang;
         setcookie('lang', $lang, time() + 86400 * 365, '/');

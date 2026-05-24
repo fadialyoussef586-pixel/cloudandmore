@@ -10,7 +10,11 @@ require_once __DIR__ . '/quick_actions.php';
 
 session_start();
 
-$lang = APP_LANG;
+$defaultLang = defined('APP_LANG_DEFAULT') ? APP_LANG_DEFAULT : 'en';
+$lang = $_SESSION['lang'] ?? ($_COOKIE['lang'] ?? $defaultLang);
+if (!in_array($lang, ['ar', 'en'], true)) {
+    $lang = $defaultLang;
+}
 $_SESSION['lang'] = $lang;
 
 $translations = require __DIR__ . '/../lang/' . $lang . '.php';
@@ -23,7 +27,7 @@ function __($key): string
 
 function lang(): string
 {
-    return APP_LANG;
+    return $_SESSION['lang'] ?? (defined('APP_LANG_DEFAULT') ? APP_LANG_DEFAULT : 'en');
 }
 
 function isRtl(): bool
@@ -90,12 +94,19 @@ function generateNumber(string $prefix): string
 
 function productName(array $product): string
 {
-    $name = trim($product['name_en'] ?? '');
-    if ($name !== '') {
-        return $name;
+    if (isRtl()) {
+        $name = trim($product['name_ar'] ?? '');
+        if ($name !== '') {
+            return $name;
+        }
+    } else {
+        $name = trim($product['name_en'] ?? '');
+        if ($name !== '') {
+            return $name;
+        }
     }
 
-    return trim($product['name_ar'] ?? '');
+    return trim($product['name_en'] ?? '') ?: trim($product['name_ar'] ?? '');
 }
 
 function employeeName(array $employee): string

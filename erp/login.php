@@ -20,12 +20,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 ?>
 <!DOCTYPE html>
-<html lang="en" dir="ltr">
+<html lang="<?= lang() ?>" dir="<?= isRtl() ? 'rtl' : 'ltr' ?>">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title><?= e(__('login')) ?> | <?= e(__('app_name')) ?></title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="<?= asset('css/app.css') ?>">
     <link rel="icon" href="<?= e(companyLogoUrl()) ?>" type="image/png">
 </head>
@@ -63,6 +63,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <p class="text-muted" style="text-align:center;margin-top:0.75rem;font-size:0.8rem">
             <a href="<?= shopUrl() ?>"><?= e(__('view_shop')) ?></a>
         </p>
+        <form method="post" action="<?= url('set-lang.php') ?>" class="lang-switch" style="margin-top:1rem;text-align:center">
+            <select name="lang" onchange="this.form.submit()" aria-label="<?= e(__('language')) ?>">
+                <option value="en" <?= lang() === 'en' ? 'selected' : '' ?>>English</option>
+                <option value="ar" <?= lang() === 'ar' ? 'selected' : '' ?>>العربية</option>
+            </select>
+        </form>
     </div>
 </div>
 </body>

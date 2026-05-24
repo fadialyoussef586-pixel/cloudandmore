@@ -38,8 +38,8 @@ if (!defined('CURRENCY_CODE')) {
 if (!defined('CURRENCY_SYMBOL')) {
     define('CURRENCY_SYMBOL', '$');
 }
-if (!defined('APP_LANG')) {
-    define('APP_LANG', 'en');
+if (!defined('APP_LANG_DEFAULT')) {
+    define('APP_LANG_DEFAULT', 'en');
 }
 
 // شعار الشركة: ملف محلي في assets/img/ أو رابط COMPANY_LOGO_URL
