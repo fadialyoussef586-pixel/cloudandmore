@@ -43,6 +43,7 @@ try {
 }
 
 $base = BASE_URL === '' ? '' : BASE_URL;
+require_once __DIR__ . '/includes/functions.php';
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -55,7 +56,8 @@ $base = BASE_URL === '' ? '' : BASE_URL;
 <body>
 <div class="login-page">
     <div class="login-box">
-        <h1>ERP Setup</h1>
+        <div class="login-logo-wrap"><?= companyLogoHtml('company-logo company-logo--login') ?></div>
+        <h1 class="login-title">ERP Setup</h1>
         <?php if ($installed): ?>
             <div class="alert alert-success"><?= htmlspecialchars($message) ?></div>
             <a href="<?= htmlspecialchars($base . '/login.php') ?>" class="btn btn-primary" style="width:100%;text-align:center;margin-top:1rem;display:block;padding:0.75rem">Go to Login</a>

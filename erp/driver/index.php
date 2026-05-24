@@ -38,7 +38,13 @@ $pageTitle = __('driver_portal');
 </head>
 <body class="driver-layout">
 <header class="driver-header">
-  <div><strong><?= e(__('driver_portal')) ?></strong><br><small class="text-muted"><?= e($_SESSION['user_name'] ?? '') ?></small></div>
+  <div class="driver-header-brand">
+    <?= companyLogoHtml('company-logo company-logo--driver') ?>
+    <div>
+      <strong><?= e(__('driver_portal')) ?></strong><br>
+      <small class="text-muted"><?= e($_SESSION['user_name'] ?? '') ?></small>
+    </div>
+  </div>
   <div style="display:flex;gap:0.5rem">
     <a href="<?= url('logout.php') ?>" class="btn btn-secondary btn-sm"><?= e(__('logout')) ?></a>
   </div>

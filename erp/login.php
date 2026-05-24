@@ -27,11 +27,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <title><?= e(__('login')) ?> | <?= e(__('app_name')) ?></title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="<?= asset('css/app.css') ?>">
+    <link rel="icon" href="<?= e(companyLogoUrl()) ?>">
 </head>
 <body>
 <div class="login-page">
     <div class="login-box">
-        <h1><?= e(__('app_name')) ?></h1>
+        <div class="login-logo-wrap">
+            <?= companyLogoHtml('company-logo company-logo--login') ?>
+        </div>
+        <h1 class="login-title"><?= e(__('login')) ?></h1>
         <p class="subtitle"><?= e(__('company_tagline')) ?></p>
 
         <?php if ($error): ?>

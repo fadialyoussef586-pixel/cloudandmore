@@ -16,9 +16,8 @@ $userRole = $_SESSION['user_role'] ?? 'staff';
 ?>
 <aside class="sidebar" id="sidebar">
     <div class="sidebar-brand">
-        <span class="brand-icon">📱</span>
+        <?= companyLogoHtml('company-logo company-logo--sidebar', true) ?>
         <span class="brand-text">
-            <span class="brand-name"><?= e(__('app_name')) ?></span>
             <small class="brand-tagline"><?= e(__('company_tagline')) ?></small>
         </span>
     </div>

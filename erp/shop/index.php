@@ -14,7 +14,7 @@ $products = $stmt->fetchAll();
 require __DIR__ . '/includes/header.php';
 ?>
 <section class="shop-hero">
-  <h1><?= e(COMPANY_NAME) ?> Store</h1>
+  <?= companyLogoHtml('company-logo company-logo--hero') ?>
   <p><?= e(__('company_tagline')) ?></p>
 </section>
 <div class="shop-filters">

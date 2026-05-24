@@ -1,0 +1,11 @@
+ضع شعار شركتك هنا بأحد الأسماء التالية (الأول الموجود يُستخدم تلقائياً):
+
+  logo.png
+  logo.jpg
+  logo.webp
+  logo.svg
+
+أو عيّن رابطاً كاملاً في Render:
+  COMPANY_LOGO_URL=https://example.com/your-logo.png
+
+الملف الافتراضي الحالي: logo.svg (يمكن استبداله بنفس الاسم).

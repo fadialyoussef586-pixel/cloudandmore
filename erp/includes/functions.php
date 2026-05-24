@@ -147,3 +147,48 @@ function productCategories(): array
         'Consumables' => __('cat_consumables'),
     ];
 }
+
+function companyLogoFile(): ?string
+{
+    static $file = null;
+    if ($file !== null) {
+        return $file === '' ? null : $file;
+    }
+
+    $dir = BASE_PATH . '/assets/img';
+    foreach (['logo.png', 'logo.jpg', 'logo.jpeg', 'logo.webp', 'logo.svg'] as $name) {
+        if (is_file($dir . '/' . $name)) {
+            $file = $name;
+            return $file;
+        }
+    }
+
+    $file = '';
+    return null;
+}
+
+function companyLogoUrl(): string
+{
+    if (COMPANY_LOGO_URL !== '') {
+        return COMPANY_LOGO_URL;
+    }
+
+    $local = companyLogoFile();
+    if ($local !== null) {
+        return asset('img/' . $local);
+    }
+
+    return asset('img/logo.svg');
+}
+
+function companyLogoHtml(string $class = 'company-logo', bool $linkToHome = false): string
+{
+    $img = '<img src="' . e(companyLogoUrl()) . '" alt="' . e(COMPANY_NAME) . '" class="' . e($class) . '">';
+
+    if (!$linkToHome) {
+        return $img;
+    }
+
+    $href = e(url('index.php'));
+    return '<a href="' . $href . '" class="company-logo-link">' . $img . '</a>';
+}

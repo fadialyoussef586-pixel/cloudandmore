@@ -11,11 +11,12 @@ if (!isset($pageTitle)) {
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="<?= asset('css/app.css') ?>">
     <link rel="stylesheet" href="<?= asset('css/shop.css') ?>">
+    <link rel="icon" href="<?= e(companyLogoUrl()) ?>">
 </head>
 <body class="shop-body">
 <header class="shop-header">
     <div class="shop-container shop-nav">
-        <a href="<?= shopUrl() ?>" class="shop-logo"><strong><?= e(COMPANY_NAME) ?></strong> <span>Store</span></a>
+        <a href="<?= shopUrl() ?>" class="shop-logo"><?= companyLogoHtml('company-logo company-logo--shop') ?></a>
         <nav class="shop-links">
             <a href="<?= shopUrl() ?>"><?= e(__('shop')) ?></a>
             <a href="<?= shopUrl('cart.php') ?>"><?= e(__('cart')) ?> (<?= array_sum($_SESSION['cart'] ?? []) ?>)</a>
