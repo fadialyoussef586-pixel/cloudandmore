@@ -238,5 +238,4 @@ return [
     'reset_data_type_reset' => 'Type RESET to confirm',
     'reset_data_confirm_js' => 'Delete ALL data? This cannot be undone.',
     'reset_data_done' => 'All data has been reset',
-    'login_owner_hint' => 'Owner account — use your password (default after setup: admin123)',
 ];

@@ -31,16 +31,8 @@ try {
     $stmt = $pdo->prepare('SELECT COUNT(*) FROM users WHERE email = ?');
     $stmt->execute([$ownerEmail]);
     if ((int) $stmt->fetchColumn() === 0) {
-        $legacy = $pdo->prepare('SELECT id FROM users WHERE email = ? LIMIT 1');
-        $legacy->execute(['admin@iqos.com']);
-        $legacyUser = $legacy->fetch();
-        if ($legacyUser) {
-            $pdo->prepare('UPDATE users SET name = ?, email = ?, password = ?, role = ?, permissions = ? WHERE id = ?')
-                ->execute(['Administrator', $ownerEmail, $hash, 'admin', $allPerms, $legacyUser['id']]);
-        } else {
-            $pdo->prepare('INSERT INTO users (name, email, password, role, permissions) VALUES (?, ?, ?, ?, ?)')
-                ->execute(['Administrator', $ownerEmail, $hash, 'admin', $allPerms]);
-        }
+        $pdo->prepare('INSERT INTO users (name, email, password, role, permissions) VALUES (?, ?, ?, ?, ?)')
+            ->execute(['Administrator', $ownerEmail, $hash, 'admin', $allPerms]);
     } else {
         $pdo->prepare('UPDATE users SET password = ?, role = ?, permissions = ? WHERE email = ?')
             ->execute([$hash, 'admin', $allPerms, $ownerEmail]);

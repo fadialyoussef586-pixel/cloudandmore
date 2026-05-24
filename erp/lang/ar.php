@@ -236,5 +236,4 @@ return [
     'reset_data_type_reset' => 'اكتب RESET للتأكيد',
     'reset_data_confirm_js' => 'حذف كل البيانات؟ لا يمكن التراجع.',
     'reset_data_done' => 'تم تصفير كل البيانات',
-    'login_owner_hint' => 'حساب المالك — كلمة المرور (بعد الإعداد: admin123)',
 ];
