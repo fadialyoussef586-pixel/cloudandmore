@@ -16,10 +16,12 @@ if ($docRoot !== '' && str_starts_with($erpRoot, $docRoot)) {
 $baseUrl = rtrim(str_replace('\\', '/', $baseUrl), '/');
 define('BASE_URL', $baseUrl);
 
-define('DB_HOST', '127.0.0.1');
-define('DB_NAME', 'erp_system');
-define('DB_USER', 'root');
-define('DB_PASS', '');
+$inDocker = file_exists('/.dockerenv');
+
+define('DB_HOST', getenv('DB_HOST') ?: ($inDocker ? 'mysql' : '127.0.0.1'));
+define('DB_NAME', getenv('DB_NAME') ?: 'titan_db');
+define('DB_USER', getenv('DB_USER') ?: 'root');
+define('DB_PASS', getenv('DB_PASS') ?: ($inDocker ? 'titan_root_pass' : ''));
 define('DB_CHARSET', 'utf8mb4');
 
 date_default_timezone_set('Asia/Riyadh');
