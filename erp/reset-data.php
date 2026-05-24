@@ -17,7 +17,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['confirm'] ?? '') === 'RESE
     } else {
         flash('error', __('reset_data_failed'));
     }
-    redirect(url('index.php'));
+    redirect(url('index.php?fresh=' . time()));
 }
 
 require __DIR__ . '/includes/header.php';

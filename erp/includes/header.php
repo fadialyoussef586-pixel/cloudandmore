@@ -12,6 +12,8 @@ $assetVersion = APP_VERSION . '-' . (@filemtime(BASE_PATH . '/assets/css/app.css
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
     <title><?= e($pageTitle) ?> | <?= e(__('app_name')) ?></title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
