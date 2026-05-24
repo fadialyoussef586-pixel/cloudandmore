@@ -58,7 +58,7 @@ $shopUrl = shopUrl();
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>فحص النظام | IKOS ERP</title>
+    <title>فحص النظام | <?= e(APP_NAME) ?></title>
     <style>
         body { font-family: system-ui, sans-serif; background: #0f1419; color: #e8edf5; padding: 2rem; max-width: 640px; margin: auto; }
         h1 { margin-bottom: 0.5rem; }
@@ -73,7 +73,7 @@ $shopUrl = shopUrl();
     </style>
 </head>
 <body>
-    <h1>فحص نظام IKOS ERP</h1>
+    <h1>فحص نظام <?= e(APP_NAME) ?></h1>
     <p style="color:#8b9cb3;margin-bottom:1.5rem">إذا في خانة حمراء، صلّحها ثم أعد التحميل.</p>
 
     <?php foreach ($checks as $c): ?>

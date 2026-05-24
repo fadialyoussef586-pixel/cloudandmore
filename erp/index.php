@@ -4,6 +4,10 @@ require_once __DIR__ . '/includes/functions.php';
 require_once __DIR__ . '/includes/auth.php';
 requireAuth();
 
+ensureTreasuryTables();
+$fxRate = getUsdToSarRate();
+$treasuryBal = treasuryBalance();
+
 $pageTitle = __('dashboard');
 
 $stats = [
@@ -14,6 +18,7 @@ $stats = [
     'deliveries' => (int) db()->query("SELECT COUNT(*) FROM deliveries WHERE status IN ('pending','in_transit')")->fetchColumn(),
     'employees' => (int) db()->query("SELECT COUNT(*) FROM employees WHERE status = 'active'")->fetchColumn(),
     'revenue' => (float) db()->query("SELECT COALESCE(SUM(total),0) FROM invoices WHERE status = 'paid' AND MONTH(created_at) = MONTH(CURRENT_DATE()) AND YEAR(created_at) = YEAR(CURRENT_DATE())")->fetchColumn(),
+    'treasury' => $treasuryBal,
 ];
 
 $recentOrders = db()->query("SELECT * FROM orders ORDER BY created_at DESC LIMIT 5")->fetchAll();
@@ -67,6 +72,12 @@ require __DIR__ . '/includes/header.php';
         <div class="label"><?= e(__('revenue_month')) ?></div>
         <div class="value"><?= formatMoney($stats['revenue']) ?></div>
     </div>
+    <?php if (in_array($_SESSION['user_role'] ?? '', ['admin', 'manager'], true)): ?>
+    <div class="stat-card primary">
+        <div class="label"><?= e(__('treasury_balance')) ?></div>
+        <div class="value" style="font-size:1.1rem"><?= formatMoney($stats['treasury']) ?></div>
+    </div>
+    <?php endif; ?>
 </div>
 
 <div class="card" style="margin-bottom:1.5rem">
@@ -77,6 +88,9 @@ require __DIR__ . '/includes/header.php';
         <a href="<?= url('delivery/create.php') ?>" class="btn btn-primary"><?= e(__('create_delivery')) ?></a>
         <a href="<?= url('hr/employees.php?action=add') ?>" class="btn btn-secondary"><?= e(__('add_employee')) ?></a>
         <a href="<?= url('orders/sales.php') ?>" class="btn btn-primary"><?= e(__('sales_orders')) ?></a>
+        <?php if (in_array($_SESSION['user_role'] ?? '', ['admin', 'manager'], true)): ?>
+        <a href="<?= url('treasury/index.php') ?>" class="btn btn-success"><?= e(__('treasury')) ?></a>
+        <?php endif; ?>
         <a href="<?= shopUrl() ?>" class="btn btn-secondary" target="_blank"><?= e(__('view_shop')) ?></a>
     </div>
 </div>

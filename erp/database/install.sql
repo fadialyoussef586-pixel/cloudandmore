@@ -183,23 +183,23 @@ CREATE TABLE IF NOT EXISTS delivery_items (
 
 -- Sample data (admin user is created by setup.php)
 INSERT INTO products (sku, name_ar, name_en, category, quantity, min_stock, cost_price, sell_price) VALUES
-('IKOS-D001', 'جهاز IKOS Pro', 'IKOS Pro Device', 'IKOS Devices', 40, 8, 450.00, 699.00),
-('IKOS-D002', 'جهاز IKOS Lite', 'IKOS Lite Device', 'IKOS Devices', 35, 8, 320.00, 499.00),
-('IKOS-D003', 'جهاز IKOS Max', 'IKOS Max Device', 'IKOS Devices', 20, 5, 580.00, 899.00),
-('IKOS-A001', 'كابل شحن IKOS USB-C', 'IKOS USB-C Charging Cable', 'Accessories', 120, 25, 25.00, 49.00),
-('IKOS-A002', 'غطاء حماية IKOS', 'IKOS Protective Case', 'Accessories', 80, 15, 18.00, 39.00),
-('IKOS-A003', 'حامل سيارة IKOS', 'IKOS Car Mount', 'Accessories', 45, 10, 35.00, 69.00),
-('IKOS-A004', 'سماعات IKOS Bluetooth', 'IKOS Bluetooth Earbuds', 'Accessories', 60, 12, 85.00, 149.00),
+('IQOS-D001', 'جهاز IQOS Pro', 'IQOS Pro Device', 'IQOS Devices', 40, 8, 450.00, 699.00),
+('IQOS-D002', 'جهاز IQOS Lite', 'IQOS Lite Device', 'IQOS Devices', 35, 8, 320.00, 499.00),
+('IQOS-D003', 'جهاز IQOS Max', 'IQOS Max Device', 'IQOS Devices', 20, 5, 580.00, 899.00),
+('IQOS-A001', 'كابل شحن IQOS USB-C', 'IQOS USB-C Charging Cable', 'Accessories', 120, 25, 25.00, 49.00),
+('IQOS-A002', 'غطاء حماية IQOS', 'IQOS Protective Case', 'Accessories', 80, 15, 18.00, 39.00),
+('IQOS-A003', 'حامل سيارة IQOS', 'IQOS Car Mount', 'Accessories', 45, 10, 35.00, 69.00),
+('IQOS-A004', 'سماعات IQOS Bluetooth', 'IQOS Bluetooth Earbuds', 'Accessories', 60, 12, 85.00, 149.00),
 ('ACLM-001', 'اشتراك Asma Cloud - سنة', 'Asma Cloud Subscription - 1 Year', 'Asma Cloud & More', 999, 0, 120.00, 199.00),
 ('ACLM-002', 'باقة Asma Cloud & More - شهر', 'Asma Cloud & More - Monthly', 'Asma Cloud & More', 999, 0, 15.00, 29.00),
-('IKOS-C001', 'Pods IKOS - علبة', 'IKOS Pods - Pack', 'Consumables', 200, 40, 45.00, 79.00),
-('IKOS-C002', 'فلتر IKOS - 5 قطع', 'IKOS Filter - 5 Pack', 'Consumables', 150, 30, 22.00, 45.00);
+('IQOS-C001', 'Pods IQOS - علبة', 'IQOS Pods - Pack', 'Consumables', 200, 40, 45.00, 79.00),
+('IQOS-C002', 'فلتر IQOS - 5 قطع', 'IQOS Filter - 5 Pack', 'Consumables', 150, 30, 22.00, 45.00);
 
 INSERT INTO customers (name, email, phone, address) VALUES
 ('متجر الريادة', 'sales@riyada-store.com', '+966501112233', 'الرياض، حي النخيل'),
 ('Cloud Solutions Co.', 'orders@cloudsolutions.com', '+966504445566', 'Jeddah, Al Andalus');
 
 INSERT INTO employees (employee_code, name_ar, name_en, email, department, job_title, salary, hire_date) VALUES
-('EMP-001', 'أحمد محمد', 'Ahmed Mohammed', 'ahmed@ikos.com', 'Sales', 'IKOS Sales Manager', 12000.00, '2023-01-15'),
+('EMP-001', 'أحمد محمد', 'Ahmed Mohammed', 'ahmed@ikos.com', 'Sales', 'IQOS Sales Manager', 12000.00, '2023-01-15'),
 ('EMP-002', 'سارة علي', 'Sara Ali', 'sara@ikos.com', 'Support', 'Asma Cloud Specialist', 9500.00, '2023-06-01'),
 ('EMP-003', 'خالد عبدالله', 'Khalid Abdullah', 'khalid@ikos.com', 'Logistics', 'Delivery Driver', 6000.00, '2024-02-10');

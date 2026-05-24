@@ -3,6 +3,7 @@
 require_once __DIR__ . '/../config/config.php';
 require_once __DIR__ . '/../config/database.php';
 require_once __DIR__ . '/shop_helpers.php';
+require_once __DIR__ . '/currency.php';
 
 session_start();
 
@@ -57,11 +58,6 @@ function asset(string $path): string
 function e(?string $value): string
 {
     return htmlspecialchars($value ?? '', ENT_QUOTES, 'UTF-8');
-}
-
-function formatMoney(float $amount): string
-{
-    return number_format($amount, 2) . ' SAR';
 }
 
 function formatDate(?string $date): string
@@ -144,8 +140,10 @@ function productCategories(): array
 {
     return [
         'IKOS Devices' => __('cat_devices'),
+        'IQOS Devices' => __('cat_devices'),
         'Accessories' => __('cat_accessories'),
         'Asma Cloud & More' => __('cat_asma_cloud'),
+        'Cloud and More' => __('cat_asma_cloud'),
         'Consumables' => __('cat_consumables'),
     ];
 }

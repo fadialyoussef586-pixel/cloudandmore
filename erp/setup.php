@@ -12,11 +12,13 @@ try {
 
     runSqlFile($pdo, __DIR__ . '/database/install.sql');
 
+    runSqlFile($pdo, __DIR__ . '/database/migrate_currency_treasury.sql');
+
     $hash = password_hash('admin123', PASSWORD_DEFAULT);
     $demoUsers = [
-        ['Administrator', 'admin@ikos.com', 'admin'],
-        ['Sales Staff', 'sales@ikos.com', 'sales'],
-        ['Delivery Driver', 'driver@ikos.com', 'driver'],
+        ['Administrator', 'admin@iqos.com', 'admin'],
+        ['Sales Staff', 'sales@iqos.com', 'sales'],
+        ['Delivery Driver', 'driver@iqos.com', 'driver'],
     ];
     foreach ($demoUsers as [$name, $email, $role]) {
         $stmt = $pdo->prepare('SELECT COUNT(*) FROM users WHERE email = ?');
@@ -35,7 +37,7 @@ try {
     }
 
     $installed = true;
-    $message = 'MySQL database ready. Logins: admin@ikos.com / sales@ikos.com / driver@ikos.com — password: admin123';
+    $message = 'MySQL database ready. Logins: admin@iqos.com / sales@iqos.com / driver@iqos.com — password: admin123';
 } catch (Throwable $e) {
     $error = $e->getMessage();
 }

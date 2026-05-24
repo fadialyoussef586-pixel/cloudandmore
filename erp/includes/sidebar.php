@@ -7,6 +7,7 @@ $navItems = [
     ['file' => 'index.php', 'icon' => '🧾', 'label' => 'invoices', 'path' => 'invoices/index.php', 'dir' => 'invoices'],
     ['file' => 'index.php', 'icon' => '👥', 'label' => 'hr', 'path' => 'hr/index.php', 'dir' => 'hr'],
     ['file' => 'index.php', 'icon' => '🚚', 'label' => 'delivery', 'path' => 'delivery/index.php', 'dir' => 'delivery'],
+    ['file' => 'index.php', 'icon' => '🏦', 'label' => 'treasury', 'path' => 'treasury/index.php', 'dir' => 'treasury', 'roles' => ['admin', 'manager']],
     ['file' => 'index.php', 'icon' => '📈', 'label' => 'reports', 'path' => 'reports/index.php', 'dir' => 'reports'],
 ];
 

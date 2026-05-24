@@ -24,6 +24,7 @@ $pageTitle = $pageTitle ?? __('dashboard');
                 <h1><?= e($pageTitle) ?></h1>
             </div>
             <div class="topbar-right">
+                <span class="exchange-rate-badge">1 USD = <?= e(number_format(getUsdToSarRate(), 4)) ?> SAR</span>
                 <form method="post" action="<?= url('set-lang.php') ?>" class="lang-switch">
                     <select name="lang" onchange="this.form.submit()">
                         <option value="ar" <?= lang() === 'ar' ? 'selected' : '' ?>>العربية</option>

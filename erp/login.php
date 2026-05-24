@@ -53,7 +53,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         </form>
 
         <p class="text-muted" style="text-align:center;margin-top:1.5rem;font-size:0.8rem">
-            admin@ikos.com · sales@ikos.com · driver@ikos.com<br>password: admin123
+            admin@iqos.com · sales@iqos.com · driver@iqos.com<br>
+            <span class="text-muted">(أو الحسابات القديمة @ikos.com)</span><br>password: admin123
         </p>
         <p class="text-muted" style="text-align:center;margin-top:0.75rem;font-size:0.8rem">
             <a href="<?= shopUrl() ?>"><?= e(__('view_shop')) ?></a>
