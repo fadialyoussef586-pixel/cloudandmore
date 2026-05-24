@@ -71,8 +71,8 @@ function deductOrderStock(int $orderId): void
     $items = db()->prepare('SELECT product_id, quantity FROM order_items WHERE order_id = ? AND product_id IS NOT NULL');
     $items->execute([$orderId]);
     foreach ($items->fetchAll() as $item) {
-        db()->prepare('UPDATE products SET quantity = CASE WHEN quantity - ? < 0 THEN 0 ELSE quantity - ? END WHERE id = ?')
-            ->execute([(int) $item['quantity'], (int) $item['quantity'], (int) $item['product_id']]);
+        db()->prepare('UPDATE products SET quantity = GREATEST(0, quantity - ?) WHERE id = ?')
+            ->execute([(int) $item['quantity'], (int) $item['product_id']]);
     }
 }
 
