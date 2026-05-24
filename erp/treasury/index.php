@@ -143,8 +143,8 @@ require __DIR__ . '/../includes/header.php';
                 <tr>
                     <td><?= e($t['reference_number']) ?></td>
                     <td><?= e(__($t['type'])) ?></td>
-                    <td><?= e(number_format((float)$t['amount'], 2)) ?> <?= e($t['currency']) ?></td>
-                    <td><?= formatMoneyHtml((float)$t['amount_sar']) ?></td>
+                    <td><?= e(number_format((float) $t['amount'], 2)) ?> <?= e($t['currency']) ?></td>
+                    <td><?= formatMoneyHtml((float) $t['amount_sar']) ?></td>
                     <td><?= e($t['description'] ?? '-') ?></td>
                     <td><?= e($t['user_name'] ?? '-') ?></td>
                     <td><?= formatDate($t['created_at']) ?></td>

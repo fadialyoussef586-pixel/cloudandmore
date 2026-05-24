@@ -462,6 +462,86 @@ tr:hover td { background: var(--bg-hover); }
 
 .invoice-items-table input { min-width: 80px; }
 
+.sale-form-card { max-width: 520px; }
+.sale-form .form-group { margin-bottom: 1rem; }
+.sale-form select,
+.sale-form input[type="text"],
+.sale-form input[type="number"] {
+  width: 100%;
+  padding: 0.65rem 0.75rem;
+  font-size: 1rem;
+}
+.payment-options { display: flex; gap: 0.75rem; flex-wrap: wrap; }
+.payment-option {
+  flex: 1;
+  min-width: 140px;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+  border: 2px solid var(--border);
+  border-radius: var(--radius);
+  cursor: pointer;
+  font-weight: 500;
+}
+.payment-option:has(input:checked) {
+  border-color: var(--primary);
+  background: #eff6ff;
+}
+.payment-option input { width: auto; margin: 0; }
+.sale-form-extra { margin: 1rem 0; color: var(--muted); font-size: 0.9rem; }
+.sale-form-extra summary { cursor: pointer; font-weight: 500; }
+.sale-total-preview {
+  background: var(--bg-hover);
+  border-radius: var(--radius);
+  padding: 1rem 1.25rem;
+  margin: 1.25rem 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+.sale-total-preview strong { font-size: 1.5rem; color: var(--primary); }
+.btn-lg { width: 100%; padding: 0.85rem; font-size: 1.05rem; }
+.serial-code {
+  font-family: ui-monospace, monospace;
+  font-size: 0.9em;
+  background: var(--bg-hover);
+  padding: 0.15rem 0.4rem;
+  border-radius: 4px;
+}
+.sale-receipt-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+}
+.sale-receipt-details {
+  display: grid;
+  gap: 0.75rem;
+  margin: 0;
+}
+.sale-receipt-details > div {
+  display: grid;
+  grid-template-columns: 8rem 1fr;
+  gap: 0.5rem;
+}
+.sale-receipt-details dt { color: var(--muted); font-weight: 500; margin: 0; }
+.sale-receipt-details dd { margin: 0; font-weight: 600; }
+.sale-receipt-total {
+  margin-top: 1.5rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+.sale-receipt-total strong { font-size: 1.35rem; }
+@media print {
+  .sidebar, .topbar, .page-actions { display: none !important; }
+  .sale-receipt { border: none; box-shadow: none; }
+}
+
 .exchange-banner {
   display: flex;
   align-items: center;

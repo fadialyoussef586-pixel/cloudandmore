@@ -1,82 +1,207 @@
 <?php
+
 require_once __DIR__ . '/../includes/functions.php';
 require_once __DIR__ . '/../includes/auth.php';
 requireAuth();
+
+ensureInvoiceSchema();
+
 $pageTitle = __('create_invoice');
-$customers = db()->query('SELECT * FROM customers ORDER BY name')->fetchAll();
 $products = db()->query('SELECT id, sku, name_ar, name_en, sell_price FROM products ORDER BY name_en')->fetchAll();
+$productsById = [];
+foreach ($products as $p) {
+    $productsById[(int) $p['id']] = $p;
+}
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $pdo = db();
     $pdo->beginTransaction();
+
     try {
-        $customerId = (int) $_POST['customer_id'];
-        $taxRate = (float) ($_POST['tax_rate'] ?? 15);
-        $discount = (float) ($_POST['discount'] ?? 0);
-        $subtotal = 0;
-        $items = $_POST['items'] ?? [];
-        foreach ($items as $item) {
-            if (empty($item['description'])) continue;
-            $subtotal += (float)$item['quantity'] * (float)$item['unit_price'];
+        $productId = (int) ($_POST['product_id'] ?? 0);
+        $qty = max(1, (int) ($_POST['quantity'] ?? 1));
+        $serial = trim($_POST['serial_number'] ?? '');
+        $paymentMethod = normalizePaymentMethod($_POST['payment_method'] ?? 'cash');
+
+        if ($productId < 1 || !isset($productsById[$productId])) {
+            throw new RuntimeException('product');
         }
-        $taxAmount = $subtotal * ($taxRate / 100);
-        $total = $subtotal + $taxAmount - $discount;
+        if ($serial === '') {
+            throw new RuntimeException('serial');
+        }
+        if (invoiceSerialExists($serial)) {
+            throw new RuntimeException('serial_duplicate');
+        }
+
+        $product = $productsById[$productId];
+        $unitPrice = (float) $product['sell_price'];
+        if ($unitPrice <= 0) {
+            throw new RuntimeException('price');
+        }
+
+        $customerId = findOrCreateQuickCustomer(
+            trim($_POST['customer_name'] ?? ''),
+            trim($_POST['customer_phone'] ?? '')
+        );
+
+        $lineTotal = $qty * $unitPrice;
+        $totals = invoiceTotalsFromLines($lineTotal);
         $invNum = generateNumber('INV');
-        $pdo->prepare('INSERT INTO invoices (invoice_number, customer_id, subtotal, tax_rate, tax_amount, discount, total, status, due_date, notes, user_id) VALUES (?,?,?,?,?,?,?,?,?,?,?)')
-            ->execute([$invNum, $customerId, $subtotal, $taxRate, $taxAmount, $discount, $total, $_POST['status'] ?? 'draft', $_POST['due_date'] ?: null, trim($_POST['notes'] ?? ''), $_SESSION['user_id']]);
+
+        $pdo->prepare(
+            'INSERT INTO invoices (invoice_number, customer_id, subtotal, tax_rate, tax_amount, discount, total, status, payment_method, notes, user_id)
+             VALUES (?,?,?,?,?,?,?,?,?,?,?)'
+        )->execute([
+            $invNum,
+            $customerId,
+            $totals['subtotal'],
+            $totals['tax_rate'],
+            $totals['tax_amount'],
+            $totals['discount'],
+            $totals['total'],
+            'paid',
+            $paymentMethod,
+            trim($_POST['notes'] ?? ''),
+            $_SESSION['user_id'],
+        ]);
         $invoiceId = dbLastInsertId($pdo);
-        foreach ($items as $item) {
-            if (empty($item['description'])) continue;
-            $lineTotal = (float)$item['quantity'] * (float)$item['unit_price'];
-            $productId = !empty($item['product_id']) ? (int)$item['product_id'] : null;
-            $pdo->prepare('INSERT INTO invoice_items (invoice_id, product_id, description, quantity, unit_price, total) VALUES (?,?,?,?,?,?)')
-                ->execute([$invoiceId, $productId, $item['description'], (int)$item['quantity'], (float)$item['unit_price'], $lineTotal]);
-            if ($productId && ($_POST['status'] ?? '') === 'paid') {
-                $pdo->prepare('UPDATE products SET quantity = GREATEST(0, quantity - ?) WHERE id = ?')->execute([(int)$item['quantity'], $productId]);
-            }
-        }
+
+        $pdo->prepare(
+            'INSERT INTO invoice_items (invoice_id, product_id, description, serial_number, quantity, unit_price, total)
+             VALUES (?,?,?,?,?,?,?)'
+        )->execute([
+            $invoiceId,
+            $productId,
+            productName($product),
+            $serial,
+            $qty,
+            $unitPrice,
+            $lineTotal,
+        ]);
+
+        $pdo->prepare('UPDATE products SET quantity = GREATEST(0, quantity - ?) WHERE id = ?')
+            ->execute([$qty, $productId]);
+
         $pdo->commit();
         flash('success', __('success_saved'));
         redirect(url('invoices/view.php?id=' . $invoiceId));
-    } catch (Exception $e) {
+    } catch (Throwable $e) {
         $pdo->rollBack();
-        flash('error', __('error'));
+        $code = $e->getMessage();
+        $errors = [
+            'product' => __('invoice_product_required'),
+            'serial' => __('invoice_serial_required'),
+            'serial_duplicate' => __('invoice_serial_duplicate'),
+            'price' => __('invoice_price_missing'),
+        ];
+        flash('error', $errors[$code] ?? __('error'));
     }
 }
 
+$selectedProductId = (int) ($_POST['product_id'] ?? ($products[0]['id'] ?? 0));
+$previewPrice = isset($productsById[$selectedProductId])
+    ? (float) $productsById[$selectedProductId]['sell_price']
+    : 0;
+$previewQty = max(1, (int) ($_POST['quantity'] ?? 1));
+$previewTotals = invoiceTotalsFromLines($previewPrice * $previewQty);
+
 require __DIR__ . '/../includes/header.php';
-$options = '';
-foreach ($products as $p) {
-    $options .= '<option value="'.$p['id'].'" data-price="'.$p['sell_price'].'">'.htmlspecialchars(productName($p)).'</option>';
-}
 ?>
-<script>window.productsOptions = `<?= $options ?>`;</script>
-<div class="card"><div class="card-body">
-<form method="post">
-<div class="form-grid">
-<div class="form-group"><label><?= e(__('customer')) ?></label>
-<select name="customer_id" required><option value="">--</option>
-<?php foreach ($customers as $c): ?><option value="<?= $c['id'] ?>"><?= e($c['name']) ?></option><?php endforeach; ?>
-</select></div>
-<div class="form-group"><label><?= e(__('due_date')) ?></label><input type="date" name="due_date"></div>
-<div class="form-group"><label><?= e(__('tax')) ?> %</label><input type="number" step="0.01" name="tax_rate" value="15"></div>
-<div class="form-group"><label><?= e(__('discount')) ?></label><input type="number" step="0.01" name="discount" value="0"></div>
-<div class="form-group"><label><?= e(__('status')) ?></label>
-<select name="status"><option value="draft"><?= e(__('draft')) ?></option><option value="sent"><?= e(__('sent')) ?></option><option value="paid"><?= e(__('paid')) ?></option></select></div>
+<div class="card sale-form-card">
+    <div class="card-header"><h2><?= e(__('sale_quick_title')) ?></h2></div>
+    <div class="card-body">
+        <form method="post" class="sale-form" id="saleForm">
+            <div class="form-group">
+                <label><?= e(__('product')) ?> *</label>
+                <select name="product_id" id="saleProduct" required>
+                    <option value="">--</option>
+                    <?php foreach ($products as $p): ?>
+                        <option value="<?= $p['id'] ?>" data-price="<?= e((string) $p['sell_price']) ?>"
+                            <?= (int) $p['id'] === $selectedProductId ? 'selected' : '' ?>>
+                            <?= e(productName($p)) ?> — <?= formatMoney((float) $p['sell_price']) ?>
+                        </option>
+                    <?php endforeach; ?>
+                </select>
+            </div>
+
+            <div class="form-grid form-grid-2">
+                <div class="form-group">
+                    <label><?= e(__('quantity')) ?> *</label>
+                    <input type="number" name="quantity" id="saleQty" value="<?= $previewQty ?>" min="1" required>
+                </div>
+                <div class="form-group">
+                    <label><?= e(__('serial_number')) ?> *</label>
+                    <input type="text" name="serial_number" value="<?= e($_POST['serial_number'] ?? '') ?>"
+                        placeholder="<?= e(__('serial_number_placeholder')) ?>" required autocomplete="off">
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label><?= e(__('payment_method')) ?> *</label>
+                <div class="payment-options">
+                    <label class="payment-option">
+                        <input type="radio" name="payment_method" value="cash"
+                            <?= ($_POST['payment_method'] ?? 'cash') !== 'transfer' ? 'checked' : '' ?>>
+                        <span><?= e(__('payment_cash')) ?></span>
+                    </label>
+                    <label class="payment-option">
+                        <input type="radio" name="payment_method" value="transfer"
+                            <?= ($_POST['payment_method'] ?? '') === 'transfer' ? 'checked' : '' ?>>
+                        <span><?= e(__('payment_transfer')) ?></span>
+                    </label>
+                </div>
+            </div>
+
+            <details class="sale-form-extra">
+                <summary><?= e(__('optional_customer_details')) ?></summary>
+                <div class="form-grid form-grid-2" style="margin-top:0.75rem">
+                    <div class="form-group">
+                        <label><?= e(__('customer')) ?></label>
+                        <input type="text" name="customer_name" value="<?= e($_POST['customer_name'] ?? '') ?>"
+                            placeholder="<?= e(__('customer_name_placeholder')) ?>">
+                    </div>
+                    <div class="form-group">
+                        <label><?= e(__('phone')) ?></label>
+                        <input type="text" name="customer_phone" value="<?= e($_POST['customer_phone'] ?? '') ?>"
+                            placeholder="05xxxxxxxx">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label><?= e(__('notes')) ?></label>
+                    <input type="text" name="notes" value="<?= e($_POST['notes'] ?? '') ?>">
+                </div>
+            </details>
+
+            <div class="sale-total-preview" id="saleTotalPreview">
+                <span><?= e(__('total')) ?></span>
+                <strong><?= formatMoney($previewTotals['total']) ?></strong>
+                <small class="text-muted"><?= e(__('invoice_vat_hint')) ?></small>
+            </div>
+
+            <button type="submit" class="btn btn-primary btn-lg"><?= e(__('save_sale')) ?></button>
+        </form>
+    </div>
 </div>
-<h3 style="margin:1rem 0"><?= e(__('items')) ?></h3>
-<div class="table-wrap invoice-items-table">
-<table id="invoiceItems"><thead><tr><th><?= e(__('product')) ?></th><th><?= e(__('description')) ?></th><th><?= e(__('quantity')) ?></th><th><?= e(__('price')) ?></th><th><?= e(__('total')) ?></th><th></th></tr></thead>
-<tbody><tr>
-<td><select name="items[0][product_id]" onchange="fillProductPrice(this)"><option value="">--</option><?= $options ?></select></td>
-<td><input name="items[0][description]" required></td>
-<td><input type="number" name="items[0][quantity]" value="1" min="1" class="qty-input" onchange="calcRow(this)"></td>
-<td><input type="number" name="items[0][unit_price]" value="0" step="0.01" class="price-input" onchange="calcRow(this)"></td>
-<td class="row-total">0.00</td><td></td>
-</tr></tbody></table>
-<button type="button" class="btn btn-secondary" onclick="addInvoiceRow()"><?= e(__('add_item')) ?></button>
-<div class="form-group" style="margin-top:1rem"><label><?= e(__('notes')) ?></label><textarea name="notes"></textarea></div>
-<div class="form-actions"><button type="submit" class="btn btn-primary"><?= e(__('save')) ?></button></div>
-</form>
-</div></div>
+<script>
+(function () {
+  const product = document.getElementById('saleProduct');
+  const qty = document.getElementById('saleQty');
+  const preview = document.getElementById('saleTotalPreview');
+  if (!product || !qty || !preview) return;
+
+  function updatePreview() {
+    const opt = product.selectedOptions[0];
+    const price = parseFloat(opt?.dataset.price || 0);
+    const q = parseInt(qty.value || '1', 10);
+    const sub = price * q;
+    const vat = sub * (<?= (float) INVOICE_VAT_PERCENT ?> / 100);
+    const total = sub + vat;
+    preview.querySelector('strong').textContent =
+      total.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' SAR';
+  }
+
+  product.addEventListener('change', updatePreview);
+  qty.addEventListener('input', updatePreview);
+})();
+</script>
 <?php require __DIR__ . '/../includes/footer.php'; ?>
