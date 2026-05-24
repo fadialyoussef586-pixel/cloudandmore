@@ -194,7 +194,7 @@ require __DIR__ . '/../includes/header.php';
     const q = parseInt(qty.value || '1', 10);
     const total = price * q;
     preview.querySelector('strong').textContent =
-      total.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' SAR';
+      total.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' USD';
   }
 
   product.addEventListener('change', updatePreview);

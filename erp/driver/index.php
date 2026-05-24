@@ -29,7 +29,7 @@ $active = $active->fetchAll();
 $pageTitle = __('driver_portal');
 ?>
 <!DOCTYPE html>
-<html lang="<?= lang() ?>" dir="<?= isRtl() ? 'rtl' : 'ltr' ?>">
+<html lang="en" dir="ltr">
 <head>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title><?= e($pageTitle) ?> | <?= e(COMPANY_NAME) ?></title>

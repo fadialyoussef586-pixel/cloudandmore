@@ -15,32 +15,17 @@ function ensurePurchaseSchema(): void
     $done = true;
 }
 
-function treasuryWithdrawForPurchase(float $amountSar, string $description, ?int $userId): void
+function treasuryWithdrawForPurchase(float $amountUsd, string $description, ?int $userId): void
 {
-    ensureTreasuryTables();
-
-    if ($amountSar <= 0) {
+    if ($amountUsd <= 0) {
         return;
     }
 
-    if (treasuryBalance() < $amountSar) {
+    if (treasuryBalance() < $amountUsd) {
         throw new RuntimeException('insufficient_treasury');
     }
 
-    $ref = generateNumber('TRS');
-    db()->prepare(
-        'INSERT INTO treasury_transactions (reference_number, type, category, currency, amount, amount_sar, description, user_id)
-         VALUES (?,?,?,?,?,?,?,?)'
-    )->execute([
-        $ref,
-        'withdrawal',
-        'purchase',
-        'SAR',
-        $amountSar,
-        $amountSar,
-        $description,
-        $userId,
-    ]);
+    recordTreasuryMovement('withdrawal', $amountUsd, 'purchase', $description, $userId);
 }
 
 function supplierDebtBalance(int $supplierId): float
@@ -124,7 +109,7 @@ function payPurchaseDebt(int $purchaseId, float $amount, ?int $userId, string $n
             throw new RuntimeException('invalid_amount');
         }
 
-        $supplier = db()->prepare('SELECT name FROM suppliers WHERE id = ?');
+        $supplier = $pdo->prepare('SELECT name FROM suppliers WHERE id = ?');
         $supplier->execute([(int) $purchase['supplier_id']]);
         $supplierName = $supplier->fetchColumn() ?: __('suppliers');
 

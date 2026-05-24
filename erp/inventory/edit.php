@@ -15,10 +15,11 @@ $pageTitle = __('edit');
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $sku = trim($_POST['sku']);
+    $name = trim($_POST['name'] ?? '');
     $image = saveProductImage($_FILES['image'] ?? [], $sku) ?: $product['image'];
     $stmt = db()->prepare('UPDATE products SET sku=?, name_ar=?, name_en=?, category=?, unit=?, min_stock=?, cost_price=?, sell_price=?, image=?, is_published=? WHERE id=?');
     $stmt->execute([
-        $sku, trim($_POST['name_ar']), trim($_POST['name_en']),
+        $sku, $name, $name,
         trim($_POST['category'] ?? ''), trim($_POST['unit'] ?? 'piece'),
         (int) ($_POST['min_stock'] ?? 5), (float) ($_POST['cost_price'] ?? 0),
         (float) ($_POST['sell_price'] ?? 0), $image,
@@ -37,8 +38,7 @@ require __DIR__ . '/../includes/header.php';
         <img src="<?= productImageUrl($product) ?>" alt="" style="width:120px;height:120px;object-fit:cover;border-radius:8px;border:1px solid var(--border)">
     </p>
     <div class="form-group"><label><?= e(__('sku')) ?></label><input name="sku" value="<?= e($product['sku']) ?>" required></div>
-    <div class="form-group"><label><?= e(__('name')) ?> (AR)</label><input name="name_ar" value="<?= e($product['name_ar']) ?>" required></div>
-    <div class="form-group"><label><?= e(__('name')) ?> (EN)</label><input name="name_en" value="<?= e($product['name_en']) ?>" required></div>
+    <div class="form-group"><label><?= e(__('product_name')) ?></label><input name="name" value="<?= e(productName($product)) ?>" required></div>
     <div class="form-group"><label><?= e(__('category')) ?></label>
     <select name="category" required>
         <?php foreach (productCategories() as $value => $label): ?>

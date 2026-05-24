@@ -1,7 +1,5 @@
 <?php
-/**
- * صفحة فحص — افتحها أولاً إذا النظام لا يعمل
- */
+
 header('Content-Type: text/html; charset=utf-8');
 require_once __DIR__ . '/includes/functions.php';
 
@@ -10,25 +8,25 @@ $checks = [];
 $checks[] = [
     'label' => 'PHP',
     'ok' => version_compare(PHP_VERSION, '8.0.0', '>='),
-    'detail' => 'الإصدار: ' . PHP_VERSION,
+    'detail' => 'Version: ' . PHP_VERSION,
 ];
 
 $checks[] = [
     'label' => 'PDO MySQL',
     'ok' => extension_loaded('pdo_mysql'),
-    'detail' => extension_loaded('pdo_mysql') ? 'مفعّل' : 'غير مفعّل — ثبّت pdo_mysql',
+    'detail' => extension_loaded('pdo_mysql') ? 'Enabled' : 'Missing — install pdo_mysql',
 ];
 
 $checks[] = [
-    'label' => 'مجلد المشروع',
+    'label' => 'Project folder',
     'ok' => is_dir(BASE_PATH),
     'detail' => BASE_PATH,
 ];
 
 $checks[] = [
-    'label' => 'BASE_URL (للروابط)',
+    'label' => 'BASE_URL',
     'ok' => true,
-    'detail' => BASE_URL === '' ? '(فارغ = جذر السيرفر — صحيح مع php -S من مجلد erp)' : BASE_URL,
+    'detail' => BASE_URL === '' ? '(empty = web root)' : BASE_URL,
 ];
 
 $dbOk = false;
@@ -37,8 +35,8 @@ try {
     $pdo = db();
     $dbOk = databaseTableExists($pdo, 'users');
     $dbDetail = $dbOk
-        ? 'متصل — ' . DB_NAME . ' @ ' . DB_HOST
-        : 'متصل — شغّل setup.php لإنشاء الجداول';
+        ? 'Connected — ' . DB_NAME . ' @ ' . DB_HOST
+        : 'Connected — run setup.php to create tables';
 } catch (Throwable $e) {
     $dbDetail = $e->getMessage();
 }
@@ -54,27 +52,27 @@ $setupUrl = url('setup.php');
 $shopUrl = shopUrl();
 ?>
 <!DOCTYPE html>
-<html lang="ar" dir="rtl">
+<html lang="en" dir="ltr">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>فحص النظام | <?= e(APP_NAME) ?></title>
+    <title>System Check | <?= e(APP_NAME) ?></title>
     <style>
-        body { font-family: system-ui, sans-serif; background: #0f1419; color: #e8edf5; padding: 2rem; max-width: 640px; margin: auto; }
+        body { font-family: system-ui, sans-serif; background: #f8fafc; color: #0f172a; padding: 2rem; max-width: 640px; margin: auto; }
         h1 { margin-bottom: 0.5rem; }
-        .item { background: #1a2332; border: 1px solid #2d3a4f; padding: 1rem; border-radius: 8px; margin-bottom: 0.75rem; display: flex; justify-content: space-between; gap: 1rem; }
-        .ok { color: #22c55e; }
-        .fail { color: #ef4444; }
-        .detail { color: #8b9cb3; font-size: 0.85rem; margin-top: 0.35rem; }
+        .item { background: #fff; border: 1px solid #e2e8f0; padding: 1rem; border-radius: 8px; margin-bottom: 0.75rem; display: flex; justify-content: space-between; gap: 1rem; }
+        .ok { color: #16a34a; }
+        .fail { color: #dc2626; }
+        .detail { color: #64748b; font-size: 0.85rem; margin-top: 0.35rem; }
         .links { margin-top: 1.5rem; display: flex; flex-wrap: wrap; gap: 0.5rem; }
-        a { background: #3b82f6; color: #fff; padding: 0.6rem 1rem; border-radius: 6px; text-decoration: none; font-size: 0.9rem; }
-        a.secondary { background: #243044; }
-        code { background: #243044; padding: 0.15rem 0.4rem; border-radius: 4px; font-size: 0.85rem; }
+        a { background: #00a8c9; color: #fff; padding: 0.6rem 1rem; border-radius: 6px; text-decoration: none; font-size: 0.9rem; }
+        a.secondary { background: #e2e8f0; color: #0f172a; }
+        code { background: #f1f5f9; padding: 0.15rem 0.4rem; border-radius: 4px; font-size: 0.85rem; }
     </style>
 </head>
 <body>
-    <h1>فحص نظام <?= e(APP_NAME) ?></h1>
-    <p style="color:#8b9cb3;margin-bottom:1.5rem">إذا في خانة حمراء، صلّحها ثم أعد التحميل.</p>
+    <h1><?= e(APP_NAME) ?> — System Check</h1>
+    <p style="color:#64748b;margin-bottom:1.5rem">Fix any failed item below, then reload.</p>
 
     <?php foreach ($checks as $c): ?>
         <div class="item">
@@ -87,15 +85,15 @@ $shopUrl = shopUrl();
     <?php endforeach; ?>
 
     <div class="links">
-        <a href="<?= htmlspecialchars($setupUrl) ?>">setup.php — تثبيت قاعدة البيانات</a>
-        <a href="<?= htmlspecialchars($loginUrl) ?>">تسجيل الدخول</a>
-        <a href="<?= htmlspecialchars($shopUrl) ?>" class="secondary">المتجر</a>
+        <a href="<?= htmlspecialchars($setupUrl) ?>">setup.php — Install database</a>
+        <a href="<?= htmlspecialchars($loginUrl) ?>">Login</a>
+        <a href="<?= htmlspecialchars($shopUrl) ?>" class="secondary">Shop</a>
     </div>
 
-    <p style="color:#8b9cb3;font-size:0.85rem;margin-top:2rem">
-        للتشغيل من الطرفية:<br>
+    <p style="color:#64748b;font-size:0.85rem;margin-top:2rem">
+        Local dev:<br>
         <code>cd erp && php -S localhost:8080</code><br>
-        ثم افتح: <code>http://localhost:8080/check.php</code>
+        Then open: <code>http://localhost:8080/check.php</code>
     </p>
 </body>
 </html>

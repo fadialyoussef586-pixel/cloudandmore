@@ -197,7 +197,7 @@ require __DIR__ . '/../includes/header.php';
     }
     const total = parseFloat(cost.value || 0) * parseInt(qty.value || '1', 10);
     preview.querySelector('strong').textContent =
-      total.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' SAR';
+      total.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' USD';
   }
 
   product.addEventListener('change', () => {

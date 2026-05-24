@@ -1,4 +1,5 @@
 <?php
+
 require_once __DIR__ . '/../includes/functions.php';
 require_once __DIR__ . '/../includes/auth.php';
 requireAuth();
@@ -6,11 +7,12 @@ $pageTitle = __('add_product');
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $sku = trim($_POST['sku']);
+    $name = trim($_POST['name'] ?? '');
     $image = saveProductImage($_FILES['image'] ?? [], $sku);
     $stmt = db()->prepare('INSERT INTO products (sku, name_ar, name_en, description_ar, description_en, category, unit, quantity, min_stock, cost_price, sell_price, image, is_published) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)');
     $stmt->execute([
-        $sku, trim($_POST['name_ar']), trim($_POST['name_en']),
-        trim($_POST['description_ar'] ?? ''), trim($_POST['description_en'] ?? ''),
+        $sku, $name, $name,
+        '', '',
         trim($_POST['category'] ?? ''), trim($_POST['unit'] ?? 'piece'),
         (int) ($_POST['quantity'] ?? 0), (int) ($_POST['min_stock'] ?? 5),
         (float) ($_POST['cost_price'] ?? 0), (float) ($_POST['sell_price'] ?? 0),
@@ -26,8 +28,7 @@ require __DIR__ . '/../includes/header.php';
 <form method="post" enctype="multipart/form-data">
 <div class="form-grid">
     <div class="form-group"><label><?= e(__('sku')) ?></label><input name="sku" required></div>
-    <div class="form-group"><label><?= e(__('name')) ?> (AR)</label><input name="name_ar" required></div>
-    <div class="form-group"><label><?= e(__('name')) ?> (EN)</label><input name="name_en" required></div>
+    <div class="form-group"><label><?= e(__('product_name')) ?></label><input name="name" required></div>
     <div class="form-group"><label><?= e(__('category')) ?></label>
     <select name="category" required>
         <option value="">--</option>

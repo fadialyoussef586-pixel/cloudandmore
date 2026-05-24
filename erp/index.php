@@ -79,20 +79,6 @@ require __DIR__ . '/includes/header.php';
     <?php endif; ?>
 </div>
 
-<div class="card" style="margin-bottom:1.5rem">
-    <div class="card-header"><h2><?= e(__('quick_actions')) ?></h2></div>
-    <div class="card-body quick-actions-bar">
-        <a href="<?= url('inventory/add.php') ?>" class="btn btn-primary"><?= e(__('add_product')) ?></a>
-        <a href="<?= url('invoices/create.php') ?>" class="btn btn-primary"><?= e(__('new_sale')) ?></a>
-        <a href="<?= url('delivery/create.php') ?>" class="btn btn-primary"><?= e(__('create_delivery')) ?></a>
-        <a href="<?= url('hr/employees.php?action=add') ?>" class="btn btn-secondary"><?= e(__('add_employee')) ?></a>
-        <a href="<?= url('orders/sales.php') ?>" class="btn btn-primary"><?= e(__('sales_orders')) ?></a>
-        <?php if (in_array($_SESSION['user_role'] ?? '', ['admin', 'manager'], true)): ?>
-        <a href="<?= url('treasury/index.php') ?>" class="btn btn-success"><?= e(__('treasury')) ?></a>
-        <?php endif; ?>
-        <a href="<?= shopUrl() ?>" class="btn btn-secondary" target="_blank"><?= e(__('view_shop')) ?></a>
-    </div>
-</div>
 
     <div class="card">
         <div class="card-header"><h2><?= e(__('recent_orders')) ?></h2></div>

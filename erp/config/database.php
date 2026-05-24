@@ -29,12 +29,12 @@ function db(): PDO
             $msg = $e->getMessage();
 
             http_response_code(503);
-            echo '<!DOCTYPE html><html lang="ar" dir="rtl"><head><meta charset="UTF-8"><title>Database Error</title>';
-            echo '<style>body{font-family:sans-serif;background:#0f1419;color:#e8edf5;padding:2rem;max-width:560px;margin:auto}';
-            echo 'a{color:#3b82f6}.box{background:#1a2332;border:1px solid #2d3a4f;padding:1.5rem;border-radius:10px}</style></head><body>';
-            echo '<div class="box"><h1>قاعدة البيانات غير متصلة</h1>';
-            echo '<p>تأكد من متغيرات البيئة: DB_HOST, DB_PORT, DB_NAME, DB_USER, DB_PASSWORD</p>';
-            echo '<p><a href="' . htmlspecialchars($setupUrl) . '">فتح setup.php</a></p>';
+            echo '<!DOCTYPE html><html lang="en" dir="ltr"><head><meta charset="UTF-8"><title>Database Error</title>';
+            echo '<style>body{font-family:sans-serif;background:#f8fafc;color:#0f172a;padding:2rem;max-width:560px;margin:auto}';
+            echo 'a{color:#00a8c9}.box{background:#fff;border:1px solid #e2e8f0;padding:1.5rem;border-radius:10px}</style></head><body>';
+            echo '<div class="box"><h1>Database not connected</h1>';
+            echo '<p>Check environment variables: DB_HOST, DB_PORT, DB_NAME, DB_USER, DB_PASSWORD</p>';
+            echo '<p><a href="' . htmlspecialchars($setupUrl) . '">Open setup.php</a></p>';
             echo '<p style="color:#8b9cb3;font-size:0.85rem;margin-top:1rem">' . htmlspecialchars($msg) . '</p>';
             echo '<p style="color:#8b9cb3;font-size:0.85rem">Host: ' . htmlspecialchars(DB_HOST) . ':' . htmlspecialchars(DB_PORT) . ' | DB: ' . htmlspecialchars(DB_NAME) . '</p>';
             echo '</div></body></html>';

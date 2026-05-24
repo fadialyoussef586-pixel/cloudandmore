@@ -6,13 +6,11 @@ require_once __DIR__ . '/shop_helpers.php';
 require_once __DIR__ . '/currency.php';
 require_once __DIR__ . '/invoice_helpers.php';
 require_once __DIR__ . '/purchase_helpers.php';
+require_once __DIR__ . '/quick_actions.php';
 
 session_start();
 
-$lang = $_SESSION['lang'] ?? ($_COOKIE['lang'] ?? 'ar');
-if (!in_array($lang, ['ar', 'en'], true)) {
-    $lang = 'ar';
-}
+$lang = APP_LANG;
 $_SESSION['lang'] = $lang;
 
 $translations = require __DIR__ . '/../lang/' . $lang . '.php';
@@ -25,7 +23,7 @@ function __($key): string
 
 function lang(): string
 {
-    return $_SESSION['lang'] ?? 'ar';
+    return APP_LANG;
 }
 
 function isRtl(): bool
@@ -92,7 +90,12 @@ function generateNumber(string $prefix): string
 
 function productName(array $product): string
 {
-    return isRtl() ? $product['name_ar'] : $product['name_en'];
+    $name = trim($product['name_en'] ?? '');
+    if ($name !== '') {
+        return $name;
+    }
+
+    return trim($product['name_ar'] ?? '');
 }
 
 function employeeName(array $employee): string

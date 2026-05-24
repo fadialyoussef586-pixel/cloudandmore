@@ -30,5 +30,9 @@ if ($baseUrl !== '') {
 
 date_default_timezone_set('Asia/Riyadh');
 
+define('CURRENCY_CODE', 'USD');
+define('CURRENCY_SYMBOL', '$');
+define('APP_LANG', 'en');
+
 // شعار الشركة: ملف محلي في assets/img/ أو رابط COMPANY_LOGO_URL
 define('COMPANY_LOGO_URL', getenv('COMPANY_LOGO_URL') ?: '');

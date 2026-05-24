@@ -16,16 +16,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (login($email, $password)) {
         redirect(homeUrlForRole($_SESSION['user_role'] ?? ''));
     }
-    $error = lang() === 'ar' ? 'بيانات الدخول غير صحيحة' : 'Invalid credentials';
+    $error = __('invalid_credentials');
 }
 ?>
 <!DOCTYPE html>
-<html lang="<?= lang() ?>" dir="<?= isRtl() ? 'rtl' : 'ltr' ?>">
+<html lang="en" dir="ltr">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title><?= e(__('login')) ?> | <?= e(__('app_name')) ?></title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="<?= asset('css/app.css') ?>">
     <link rel="icon" href="<?= e(companyLogoUrl()) ?>" type="image/png">
 </head>
@@ -58,18 +58,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         <p class="text-muted" style="text-align:center;margin-top:1.5rem;font-size:0.8rem">
             admin@iqos.com · sales@iqos.com · driver@iqos.com<br>
-            <span class="text-muted">(أو الحسابات القديمة @ikos.com)</span><br>password: admin123
+            password: admin123
         </p>
         <p class="text-muted" style="text-align:center;margin-top:0.75rem;font-size:0.8rem">
             <a href="<?= shopUrl() ?>"><?= e(__('view_shop')) ?></a>
         </p>
-
-        <form method="post" action="<?= url('set-lang.php') ?>" style="margin-top:1rem;text-align:center">
-            <select name="lang" onchange="this.form.submit()" style="background:var(--bg);border:1px solid var(--border);color:var(--text);padding:0.4rem;border-radius:6px">
-                <option value="ar" <?= lang() === 'ar' ? 'selected' : '' ?>>العربية</option>
-                <option value="en" <?= lang() === 'en' ? 'selected' : '' ?>>English</option>
-            </select>
-        </form>
     </div>
 </div>
 </body>
