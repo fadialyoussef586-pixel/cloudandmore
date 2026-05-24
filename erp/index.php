@@ -1,0 +1,155 @@
+<?php
+
+require_once __DIR__ . '/includes/functions.php';
+require_once __DIR__ . '/includes/auth.php';
+requireAuth();
+
+$pageTitle = __('dashboard');
+
+$stats = [
+    'products' => (int) db()->query('SELECT COUNT(*) FROM products')->fetchColumn(),
+    'low_stock' => (int) db()->query('SELECT COUNT(*) FROM products WHERE quantity <= min_stock')->fetchColumn(),
+    'orders' => (int) db()->query("SELECT COUNT(*) FROM orders WHERE status = 'new'")->fetchColumn(),
+    'invoices' => (int) db()->query('SELECT COUNT(*) FROM invoices')->fetchColumn(),
+    'deliveries' => (int) db()->query("SELECT COUNT(*) FROM deliveries WHERE status IN ('pending','in_transit')")->fetchColumn(),
+    'employees' => (int) db()->query("SELECT COUNT(*) FROM employees WHERE status = 'active'")->fetchColumn(),
+    'revenue' => (float) db()->query("SELECT COALESCE(SUM(total),0) FROM invoices WHERE status = 'paid' AND MONTH(created_at) = MONTH(CURRENT_DATE()) AND YEAR(created_at) = YEAR(CURRENT_DATE())")->fetchColumn(),
+];
+
+$recentOrders = db()->query("SELECT * FROM orders ORDER BY created_at DESC LIMIT 5")->fetchAll();
+
+$recentInvoices = db()->query("
+    SELECT i.*, c.name AS customer_name
+    FROM invoices i
+    JOIN customers c ON c.id = i.customer_id
+    ORDER BY i.created_at DESC LIMIT 5
+")->fetchAll();
+
+$recentDeliveries = db()->query("
+    SELECT d.*, c.name AS customer_name
+    FROM deliveries d
+    LEFT JOIN customers c ON c.id = d.customer_id
+    ORDER BY d.created_at DESC LIMIT 5
+")->fetchAll();
+
+require __DIR__ . '/includes/header.php';
+?>
+
+<p class="text-muted" style="margin-bottom:0.5rem"><?= e(__('welcome')) ?>, <?= e($_SESSION['user_name'] ?? '') ?>!</p>
+<p class="text-muted" style="margin-bottom:1.5rem;font-size:0.875rem"><?= e(__('company_tagline')) ?></p>
+
+<div class="stats-grid">
+    <div class="stat-card primary">
+        <div class="label"><?= e(__('total_products')) ?></div>
+        <div class="value"><?= $stats['products'] ?></div>
+    </div>
+    <div class="stat-card warning">
+        <div class="label"><?= e(__('low_stock')) ?></div>
+        <div class="value"><?= $stats['low_stock'] ?></div>
+    </div>
+        <div class="stat-card warning">
+        <div class="label"><?= e(__('pending_orders')) ?></div>
+        <div class="value"><?= $stats['orders'] ?></div>
+    </div>
+<div class="stat-card">
+        <div class="label"><?= e(__('total_invoices')) ?></div>
+        <div class="value"><?= $stats['invoices'] ?></div>
+    </div>
+    <div class="stat-card warning">
+        <div class="label"><?= e(__('pending_deliveries')) ?></div>
+        <div class="value"><?= $stats['deliveries'] ?></div>
+    </div>
+    <div class="stat-card">
+        <div class="label"><?= e(__('total_employees')) ?></div>
+        <div class="value"><?= $stats['employees'] ?></div>
+    </div>
+    <div class="stat-card success">
+        <div class="label"><?= e(__('revenue_month')) ?></div>
+        <div class="value"><?= formatMoney($stats['revenue']) ?></div>
+    </div>
+</div>
+
+<div class="card" style="margin-bottom:1.5rem">
+    <div class="card-header"><h2><?= e(__('quick_actions')) ?></h2></div>
+    <div class="card-body" style="display:flex;gap:0.75rem;flex-wrap:wrap">
+        <a href="<?= url('inventory/add.php') ?>" class="btn btn-primary"><?= e(__('add_product')) ?></a>
+        <a href="<?= url('invoices/create.php') ?>" class="btn btn-primary"><?= e(__('create_invoice')) ?></a>
+        <a href="<?= url('delivery/create.php') ?>" class="btn btn-primary"><?= e(__('create_delivery')) ?></a>
+        <a href="<?= url('hr/employees.php?action=add') ?>" class="btn btn-secondary"><?= e(__('add_employee')) ?></a>
+        <a href="<?= url('orders/sales.php') ?>" class="btn btn-primary"><?= e(__('sales_orders')) ?></a>
+        <a href="<?= shopUrl() ?>" class="btn btn-secondary" target="_blank"><?= e(__('view_shop')) ?></a>
+    </div>
+</div>
+
+    <div class="card">
+        <div class="card-header"><h2><?= e(__('recent_orders')) ?></h2></div>
+        <div class="card-body table-wrap">
+            <?php if (empty($recentOrders)): ?><p class="text-muted"><?= e(__('no_data')) ?></p>
+            <?php else: ?><table><thead><tr><th><?= e(__('order_number')) ?></th><th><?= e(__('customer')) ?></th><th><?= e(__('total')) ?></th><th><?= e(__('status')) ?></th></tr></thead><tbody>
+            <?php foreach ($recentOrders as $o): ?><tr><td><a href="<?= url('orders/view.php?id='.$o['id']) ?>"><?= e($o['order_number']) ?></a></td><td><?= e($o['customer_name']) ?></td><td><?= formatMoney((float)$o['total']) ?></td><td><?= orderStatusBadge($o['status']) ?></td></tr><?php endforeach; ?></tbody></table><?php endif; ?>
+        </div>
+    </div>
+
+<div class="grid-2">
+    <div class="card">
+        <div class="card-header"><h2><?= e(__('recent_invoices')) ?></h2></div>
+        <div class="card-body table-wrap">
+            <?php if (empty($recentInvoices)): ?>
+                <p class="text-muted"><?= e(__('no_data')) ?></p>
+            <?php else: ?>
+                <table>
+                    <thead>
+                        <tr>
+                            <th><?= e(__('invoice_number')) ?></th>
+                            <th><?= e(__('customer')) ?></th>
+                            <th><?= e(__('total')) ?></th>
+                            <th><?= e(__('status')) ?></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php foreach ($recentInvoices as $inv): ?>
+                            <tr>
+                                <td><a href="<?= url('invoices/view.php?id=' . $inv['id']) ?>"><?= e($inv['invoice_number']) ?></a></td>
+                                <td><?= e($inv['customer_name']) ?></td>
+                                <td><?= formatMoney((float) $inv['total']) ?></td>
+                                <td><?= statusBadge($inv['status']) ?></td>
+                            </tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                </table>
+            <?php endif; ?>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header"><h2><?= e(__('recent_deliveries')) ?></h2></div>
+        <div class="card-body table-wrap">
+            <?php if (empty($recentDeliveries)): ?>
+                <p class="text-muted"><?= e(__('no_data')) ?></p>
+            <?php else: ?>
+                <table>
+                    <thead>
+                        <tr>
+                            <th><?= e(__('delivery_number')) ?></th>
+                            <th><?= e(__('customer')) ?></th>
+                            <th><?= e(__('scheduled_date')) ?></th>
+                            <th><?= e(__('status')) ?></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php foreach ($recentDeliveries as $del): ?>
+                            <tr>
+                                <td><a href="<?= url('delivery/view.php?id=' . $del['id']) ?>"><?= e($del['delivery_number']) ?></a></td>
+                                <td><?= e($del['customer_name'] ?? '-') ?></td>
+                                <td><?= formatDate($del['scheduled_date']) ?></td>
+                                <td><?= statusBadge($del['status']) ?></td>
+                            </tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                </table>
+            <?php endif; ?>
+        </div>
+    </div>
+</div>
+
+<?php require __DIR__ . '/includes/footer.php'; ?>

@@ -1,0 +1,52 @@
+<?php
+require_once __DIR__ . '/../includes/functions.php';
+require_once __DIR__ . '/../includes/auth.php';
+requireAuth();
+$pageTitle = __('add_product');
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $sku = trim($_POST['sku']);
+    $image = saveProductImage($_FILES['image'] ?? [], $sku);
+    $stmt = db()->prepare('INSERT INTO products (sku, name_ar, name_en, description_ar, description_en, category, unit, quantity, min_stock, cost_price, sell_price, image, is_published) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)');
+    $stmt->execute([
+        $sku, trim($_POST['name_ar']), trim($_POST['name_en']),
+        trim($_POST['description_ar'] ?? ''), trim($_POST['description_en'] ?? ''),
+        trim($_POST['category'] ?? ''), trim($_POST['unit'] ?? 'piece'),
+        (int) ($_POST['quantity'] ?? 0), (int) ($_POST['min_stock'] ?? 5),
+        (float) ($_POST['cost_price'] ?? 0), (float) ($_POST['sell_price'] ?? 0),
+        $image, isset($_POST['is_published']) ? 1 : 0,
+    ]);
+    flash('success', __('success_saved'));
+    redirect(url('inventory/index.php'));
+}
+
+require __DIR__ . '/../includes/header.php';
+?>
+<div class="card"><div class="card-body">
+<form method="post" enctype="multipart/form-data">
+<div class="form-grid">
+    <div class="form-group"><label><?= e(__('sku')) ?></label><input name="sku" required></div>
+    <div class="form-group"><label><?= e(__('name')) ?> (AR)</label><input name="name_ar" required></div>
+    <div class="form-group"><label><?= e(__('name')) ?> (EN)</label><input name="name_en" required></div>
+    <div class="form-group"><label><?= e(__('category')) ?></label>
+    <select name="category" required>
+        <option value="">--</option>
+        <?php foreach (productCategories() as $value => $label): ?>
+            <option value="<?= e($value) ?>"><?= e($label) ?></option>
+        <?php endforeach; ?>
+    </select></div>
+    <div class="form-group"><label><?= e(__('product_image')) ?></label><input type="file" name="image" accept="image/*"></div>
+    <div class="form-group"><label><?= e(__('unit')) ?></label><input name="unit" value="piece"></div>
+    <div class="form-group"><label><?= e(__('quantity')) ?></label><input type="number" name="quantity" value="0" min="0"></div>
+    <div class="form-group"><label><?= e(__('min_stock')) ?></label><input type="number" name="min_stock" value="5" min="0"></div>
+    <div class="form-group"><label><?= e(__('cost_price')) ?></label><input type="number" step="0.01" name="cost_price" value="0"></div>
+    <div class="form-group"><label><?= e(__('sell_price')) ?></label><input type="number" step="0.01" name="sell_price" value="0"></div>
+    <div class="form-group"><label><input type="checkbox" name="is_published" value="1" checked> <?= e(__('published')) ?></label></div>
+</div>
+<div class="form-actions">
+    <button type="submit" class="btn btn-primary"><?= e(__('save')) ?></button>
+    <a href="<?= url('inventory/index.php') ?>" class="btn btn-secondary"><?= e(__('cancel')) ?></a>
+</div>
+</form>
+</div></div>
+<?php require __DIR__ . '/../includes/footer.php'; ?>
