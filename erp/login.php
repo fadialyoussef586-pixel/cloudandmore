@@ -58,6 +58,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         <p class="text-muted" style="text-align:center;margin-top:0.75rem;font-size:0.8rem;line-height:1.6">
             <a href="<?= url('setup.php') ?>"><?= e(__('login_setup_link')) ?></a>
+            · <a href="<?= url('fix-zero.php') ?>"><?= e(__('fix_zero_link')) ?></a>
             · <a href="<?= shopUrl() ?>"><?= e(__('view_shop')) ?></a>
         </p>
         <form method="post" action="<?= url('set-lang.php') ?>" class="lang-switch" style="margin-top:1rem;text-align:center">

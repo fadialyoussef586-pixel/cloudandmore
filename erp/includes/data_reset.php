@@ -47,19 +47,47 @@ function clearTable(PDO $pdo, string $table): void
     }
 }
 
-function resetBusinessData(PDO $pdo): void
+function nuclearZeroData(PDO $pdo): array
 {
+    $errors = [];
     $pdo->exec('SET FOREIGN_KEY_CHECKS = 0');
 
-    foreach (businessDataTables() as $table) {
-        clearTable($pdo, $table);
-    }
-
-    foreach (businessDataTables() as $table) {
-        clearTable($pdo, $table);
+    $tables = $pdo->query('SHOW TABLES')->fetchAll(PDO::FETCH_COLUMN);
+    foreach ($tables as $table) {
+        if ($table === 'users' || !preg_match('/^[a-zA-Z0-9_]+$/', (string) $table)) {
+            continue;
+        }
+        $safe = str_replace('`', '``', $table);
+        try {
+            $pdo->exec('DELETE FROM `' . $safe . '`');
+        } catch (PDOException $e) {
+            $errors[] = $table . ': ' . $e->getMessage();
+        }
     }
 
     $pdo->exec('SET FOREIGN_KEY_CHECKS = 1');
+
+    return $errors;
+}
+
+function resetBusinessData(PDO $pdo): void
+{
+    nuclearZeroData($pdo);
+}
+
+function resetBusinessDataVerified(PDO $pdo): bool
+{
+    ensureSchemasBeforeReset($pdo);
+
+    for ($i = 0; $i < 3; $i++) {
+        nuclearZeroData($pdo);
+        $totals = financialTotals($pdo);
+        if ($totals['treasury'] == 0.0 && $totals['revenue'] == 0.0 && $totals['invoices'] === 0) {
+            return true;
+        }
+    }
+
+    return false;
 }
 
 function monthlyRevenue(PDO $pdo): float
@@ -106,22 +134,6 @@ function financialTotals(PDO $pdo): array
         'invoices' => (int) ($pdo->query('SELECT COUNT(*) FROM invoices')->fetchColumn() ?? 0),
         'treasury_rows' => (int) ($pdo->query('SELECT COUNT(*) FROM treasury_transactions')->fetchColumn() ?? 0),
     ];
-}
-
-function resetBusinessDataVerified(PDO $pdo): bool
-{
-    ensureSchemasBeforeReset($pdo);
-    resetBusinessData($pdo);
-
-    for ($i = 0; $i < 3; $i++) {
-        $totals = financialTotals($pdo);
-        if ($totals['treasury'] == 0.0 && $totals['revenue'] == 0.0 && $totals['invoices'] === 0) {
-            return true;
-        }
-        resetBusinessData($pdo);
-    }
-
-    return false;
 }
 
 function ownerAccountPayload(): array

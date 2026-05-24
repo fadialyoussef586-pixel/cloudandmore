@@ -79,6 +79,7 @@ require_once __DIR__ . '/includes/functions.php';
                 كلمة المرور: <strong>admin123</strong>
             </p>
             <a href="<?= htmlspecialchars($base . '/login.php') ?>" class="btn btn-primary" style="width:100%;text-align:center;margin-top:1rem;display:block;padding:0.75rem">تسجيل الدخول</a>
+            <a href="<?= htmlspecialchars($base . '/fix-zero.php') ?>" class="btn btn-danger" style="width:100%;text-align:center;margin-top:0.75rem;display:block;padding:0.75rem">تصفير كامل (fix-zero)</a>
 
             <hr style="margin:1.5rem 0;border:none;border-top:1px solid var(--border)">
 

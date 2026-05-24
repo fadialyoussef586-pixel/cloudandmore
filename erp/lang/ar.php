@@ -239,4 +239,5 @@ return [
     'reset_data_done' => 'تم تصفير كل البيانات',
     'reset_data_failed' => 'التصفير ما اكتمل — الخزنة أو الإيرادات لسا فيها أرقام. جرّب مرة ثانية من setup.php',
     'login_setup_link' => 'إصلاح الدخول / تصفير (setup)',
+    'fix_zero_link' => 'تصفير كامل (fix-zero)',
 ];
