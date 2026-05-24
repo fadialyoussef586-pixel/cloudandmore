@@ -82,8 +82,15 @@ function runSqlFile(PDO $pdo, string $path): void
 
 function databaseTableExists(PDO $pdo, string $table): bool
 {
-    $stmt = $pdo->prepare('SHOW TABLES LIKE ?');
+    if (!preg_match('/^[a-zA-Z0-9_]+$/', $table)) {
+        return false;
+    }
+
+    $stmt = $pdo->prepare(
+        'SELECT COUNT(*) FROM information_schema.TABLES
+         WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ?'
+    );
     $stmt->execute([$table]);
 
-    return (bool) $stmt->fetch();
+    return (int) $stmt->fetchColumn() > 0;
 }
