@@ -1,7 +1,7 @@
 <?php
 
-define('APP_NAME', 'IQOS ERP');
-define('COMPANY_NAME', 'IQOS');
+define('APP_NAME', 'Cloud and More ERP');
+define('COMPANY_NAME', 'Cloud and More');
 define('COMPANY_TAGLINE', 'Devices · Accessories · Cloud and More');
 define('APP_VERSION', '1.0.0');
 define('BASE_PATH', dirname(__DIR__));

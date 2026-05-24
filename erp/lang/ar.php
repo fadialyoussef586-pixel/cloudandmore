@@ -1,7 +1,7 @@
 <?php
 
 return [
-    'app_name' => 'IQOS ERP',
+    'app_name' => 'Cloud and More ERP',
     'company_tagline' => 'أجهزة · إكسسوارات · Cloud and More',
     'dashboard' => 'لوحة التحكم',
     'inventory' => 'المخزون',
