@@ -237,5 +237,6 @@ return [
     'reset_data_type_reset' => 'اكتب RESET للتأكيد',
     'reset_data_confirm_js' => 'حذف كل البيانات؟ لا يمكن التراجع.',
     'reset_data_done' => 'تم تصفير كل البيانات',
+    'reset_data_failed' => 'التصفير ما اكتمل — الخزنة أو الإيرادات لسا فيها أرقام. جرّب مرة ثانية من setup.php',
     'login_setup_link' => 'إصلاح الدخول / تصفير (setup)',
 ];

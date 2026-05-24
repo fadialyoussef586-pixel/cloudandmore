@@ -35,23 +35,21 @@ try {
         || (isset($_GET['reset']) && $_GET['reset'] === 'RESET');
 
     if ($wantReset) {
-        ensureSchemasBeforeReset($pdo);
-        resetBusinessData($pdo);
+        $ok = resetBusinessDataVerified($pdo);
         ensureOwnerAccount($pdo);
-        $totals = financialTotals($pdo);
-        if ($totals['treasury'] != 0.0 || $totals['revenue'] != 0.0 || $totals['invoices'] > 0) {
-            resetBusinessData($pdo);
-        }
         $didReset = true;
+        $message = 'Owner account: ' . $ownerEmail . ' — password: admin123';
+        if ($ok) {
+            $message .= ' | All business data has been reset to zero.';
+        } else {
+            $message .= ' | WARNING: Some financial data may remain — try reset again or contact support.';
+        }
+    } else {
+        $message = 'Owner account: ' . $ownerEmail . ' — password: admin123';
+        $message .= ' | To clear products, sales, employees: submit RESET below.';
     }
 
     $installed = true;
-    $message = 'Owner account: ' . $ownerEmail . ' — password: admin123';
-    if ($didReset) {
-        $message .= ' | All business data has been reset to zero.';
-    } else {
-        $message .= ' | To clear products, sales, employees: submit RESET below.';
-    }
 } catch (Throwable $e) {
     $error = $e->getMessage();
 }

@@ -26,66 +26,102 @@ function businessDataTables(): array
 
 function clearTable(PDO $pdo, string $table): void
 {
-    if (!databaseTableExists($pdo, $table)) {
+    if (!preg_match('/^[a-zA-Z0-9_]+$/', $table)) {
         return;
     }
 
+    $safe = str_replace('`', '``', $table);
+
     try {
-        $pdo->exec('TRUNCATE TABLE `' . $table . '`');
+        $pdo->exec('TRUNCATE TABLE `' . $safe . '`');
+        return;
     } catch (PDOException) {
-        $pdo->exec('DELETE FROM `' . $table . '`');
-        try {
-            $pdo->exec('ALTER TABLE `' . $table . '` AUTO_INCREMENT = 1');
-        } catch (PDOException) {
-            // ignore
-        }
+        // fall through
+    }
+
+    try {
+        $pdo->exec('DELETE FROM `' . $safe . '`');
+        $pdo->exec('ALTER TABLE `' . $safe . '` AUTO_INCREMENT = 1');
+    } catch (PDOException) {
+        // table may not exist yet
     }
 }
 
 function resetBusinessData(PDO $pdo): void
 {
     $pdo->exec('SET FOREIGN_KEY_CHECKS = 0');
+
     foreach (businessDataTables() as $table) {
         clearTable($pdo, $table);
     }
-    $pdo->exec('SET FOREIGN_KEY_CHECKS = 1');
 
-    // تأكيد إضافي: الخزنة والإيرادات = صفر
-    foreach (['treasury_transactions', 'invoice_items', 'invoices', 'orders', 'order_items', 'purchases', 'supplier_debt_payments'] as $table) {
-        if (databaseTableExists($pdo, $table)) {
-            $pdo->exec('DELETE FROM `' . $table . '`');
-        }
+    foreach (businessDataTables() as $table) {
+        clearTable($pdo, $table);
     }
+
+    $pdo->exec('SET FOREIGN_KEY_CHECKS = 1');
 }
 
-function financialTotals(PDO $pdo): array
+function monthlyRevenue(PDO $pdo): float
 {
-    $treasury = 0.0;
-    $revenue = 0.0;
-    $invoices = 0;
+    try {
+        $count = (int) $pdo->query('SELECT COUNT(*) FROM invoices')->fetchColumn();
+        if ($count === 0) {
+            return 0.0;
+        }
 
-    if (databaseTableExists($pdo, 'treasury_transactions')) {
-        $treasury = (float) $pdo->query(
-            "SELECT COALESCE(SUM(CASE WHEN type = 'deposit' THEN amount_sar ELSE -amount_sar END), 0)
-             FROM treasury_transactions"
-        )->fetchColumn();
-    }
-
-    if (databaseTableExists($pdo, 'invoices')) {
-        $revenue = (float) $pdo->query(
+        return (float) $pdo->query(
             "SELECT COALESCE(SUM(total), 0) FROM invoices
              WHERE status = 'paid'
                AND MONTH(created_at) = MONTH(CURRENT_DATE())
                AND YEAR(created_at) = YEAR(CURRENT_DATE())"
         )->fetchColumn();
-        $invoices = (int) $pdo->query('SELECT COUNT(*) FROM invoices')->fetchColumn();
+    } catch (Throwable) {
+        return 0.0;
+    }
+}
+
+function treasuryBalanceFromDb(PDO $pdo): float
+{
+    try {
+        $count = (int) $pdo->query('SELECT COUNT(*) FROM treasury_transactions')->fetchColumn();
+        if ($count === 0) {
+            return 0.0;
+        }
+
+        return (float) $pdo->query(
+            "SELECT COALESCE(SUM(CASE WHEN type = 'deposit' THEN amount_sar ELSE -amount_sar END), 0)
+             FROM treasury_transactions"
+        )->fetchColumn();
+    } catch (Throwable) {
+        return 0.0;
+    }
+}
+
+function financialTotals(PDO $pdo): array
+{
+    return [
+        'treasury' => treasuryBalanceFromDb($pdo),
+        'revenue' => monthlyRevenue($pdo),
+        'invoices' => (int) ($pdo->query('SELECT COUNT(*) FROM invoices')->fetchColumn() ?? 0),
+        'treasury_rows' => (int) ($pdo->query('SELECT COUNT(*) FROM treasury_transactions')->fetchColumn() ?? 0),
+    ];
+}
+
+function resetBusinessDataVerified(PDO $pdo): bool
+{
+    ensureSchemasBeforeReset($pdo);
+    resetBusinessData($pdo);
+
+    for ($i = 0; $i < 3; $i++) {
+        $totals = financialTotals($pdo);
+        if ($totals['treasury'] == 0.0 && $totals['revenue'] == 0.0 && $totals['invoices'] === 0) {
+            return true;
+        }
+        resetBusinessData($pdo);
     }
 
-    return [
-        'treasury' => $treasury,
-        'revenue' => $revenue,
-        'invoices' => $invoices,
-    ];
+    return false;
 }
 
 function ownerAccountPayload(): array
@@ -98,9 +134,6 @@ function ownerAccountPayload(): array
     ];
 }
 
-/**
- * Ensures exactly one owner user (OWNER_EMAIL). Migrates legacy admin@iqos.com if needed.
- */
 function ensureOwnerAccount(PDO $pdo): void
 {
     $ownerEmail = strtolower(trim(OWNER_EMAIL));

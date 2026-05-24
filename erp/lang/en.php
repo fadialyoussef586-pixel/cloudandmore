@@ -238,5 +238,6 @@ return [
     'reset_data_type_reset' => 'Type RESET to confirm',
     'reset_data_confirm_js' => 'Delete ALL data? This cannot be undone.',
     'reset_data_done' => 'All data has been reset',
+    'reset_data_failed' => 'Reset incomplete — treasury or revenue still has data. Try again from setup.php',
     'login_setup_link' => 'Fix login / reset account (setup)',
 ];

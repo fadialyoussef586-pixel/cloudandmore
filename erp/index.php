@@ -5,18 +5,20 @@ require_once __DIR__ . '/includes/auth.php';
 requireAuth();
 
 ensureTreasuryTables();
-$treasuryBal = treasuryBalance();
+$pdo = db();
+$treasuryBal = treasuryBalanceFromDb($pdo);
+$monthlyRevenue = monthlyRevenue($pdo);
 
 $pageTitle = __('dashboard');
 
 $stats = [
-    'products' => (int) db()->query('SELECT COUNT(*) FROM products')->fetchColumn(),
-    'low_stock' => (int) db()->query('SELECT COUNT(*) FROM products WHERE quantity <= min_stock')->fetchColumn(),
-    'orders' => (int) db()->query("SELECT COUNT(*) FROM orders WHERE status = 'new'")->fetchColumn(),
-    'invoices' => (int) db()->query('SELECT COUNT(*) FROM invoices')->fetchColumn(),
-    'deliveries' => (int) db()->query("SELECT COUNT(*) FROM deliveries WHERE status IN ('pending','in_transit')")->fetchColumn(),
-    'employees' => (int) db()->query("SELECT COUNT(*) FROM employees WHERE status = 'active'")->fetchColumn(),
-    'revenue' => (float) db()->query("SELECT COALESCE(SUM(total),0) FROM invoices WHERE status = 'paid' AND MONTH(created_at) = MONTH(CURRENT_DATE()) AND YEAR(created_at) = YEAR(CURRENT_DATE())")->fetchColumn(),
+    'products' => (int) $pdo->query('SELECT COUNT(*) FROM products')->fetchColumn(),
+    'low_stock' => (int) $pdo->query('SELECT COUNT(*) FROM products WHERE quantity <= min_stock')->fetchColumn(),
+    'orders' => (int) $pdo->query("SELECT COUNT(*) FROM orders WHERE status = 'new'")->fetchColumn(),
+    'invoices' => (int) $pdo->query('SELECT COUNT(*) FROM invoices')->fetchColumn(),
+    'deliveries' => (int) $pdo->query("SELECT COUNT(*) FROM deliveries WHERE status IN ('pending','in_transit')")->fetchColumn(),
+    'employees' => (int) $pdo->query("SELECT COUNT(*) FROM employees WHERE status = 'active'")->fetchColumn(),
+    'revenue' => $monthlyRevenue,
     'treasury' => $treasuryBal,
 ];
 

@@ -12,14 +12,7 @@ function formatMoneyHtml(float $amount): string
 
 function treasuryBalance(): float
 {
-    try {
-        return (float) db()->query(
-            "SELECT COALESCE(SUM(CASE WHEN type = 'deposit' THEN amount_sar ELSE -amount_sar END), 0)
-             FROM treasury_transactions"
-        )->fetchColumn();
-    } catch (Throwable $e) {
-        return 0.0;
-    }
+    return treasuryBalanceFromDb(db());
 }
 
 function ensureTreasuryTables(): void

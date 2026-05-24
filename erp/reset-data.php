@@ -10,14 +10,13 @@ $pageTitle = __('reset_data');
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['confirm'] ?? '') === 'RESET') {
     $pdo = db();
-    ensureSchemasBeforeReset($pdo);
-    resetBusinessData($pdo);
+    $ok = resetBusinessDataVerified($pdo);
     ensureOwnerAccount($pdo);
-    $totals = financialTotals($pdo);
-    if ($totals['treasury'] != 0.0 || $totals['revenue'] != 0.0 || $totals['invoices'] > 0) {
-        resetBusinessData($pdo);
+    if ($ok) {
+        flash('success', __('reset_data_done'));
+    } else {
+        flash('error', __('reset_data_failed'));
     }
-    flash('success', __('reset_data_done'));
     redirect(url('index.php'));
 }
 
