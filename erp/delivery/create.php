@@ -12,14 +12,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $pdo->beginTransaction();
     try {
         $num = generateNumber('DEL');
-        $pdo->prepare('INSERT INTO deliveries (delivery_number, customer_id, invoice_id, driver_name, vehicle_number, delivery_address, status, scheduled_date, notes, user_id) VALUES (?,?,?,?,?,?,?,?,?,?)')
-            ->execute([
+        $stmt = $pdo->prepare('INSERT INTO deliveries (delivery_number, customer_id, invoice_id, driver_name, vehicle_number, delivery_address, status, scheduled_date, notes, user_id) VALUES (?,?,?,?,?,?,?,?,?,?) RETURNING id');
+        $stmt->execute([
                 $num, (int)($_POST['customer_id'] ?: 0) ?: null, (int)($_POST['invoice_id'] ?: 0) ?: null,
                 trim($_POST['driver_name'] ?? ''), trim($_POST['vehicle_number'] ?? ''),
                 trim($_POST['delivery_address']), $_POST['status'] ?? 'pending',
                 $_POST['scheduled_date'] ?: null, trim($_POST['notes'] ?? ''), $_SESSION['user_id']
             ]);
-        $delId = (int) $pdo->lastInsertId();
+        $delId = (int) $stmt->fetchColumn();
         foreach ($_POST['items'] ?? [] as $item) {
             if (empty($item['description'])) continue;
             $pdo->prepare('INSERT INTO delivery_items (delivery_id, product_id, description, quantity) VALUES (?,?,?,?)')

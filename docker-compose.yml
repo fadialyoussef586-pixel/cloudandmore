@@ -1,4 +1,4 @@
-# اختبار محلي — نفس صورة Render (MySQL + Apache في حاوية واحدة)
+# اختبار محلي — يتطلب PostgreSQL (أو استخدم DATABASE_URL من Render)
 services:
   web:
     build:
@@ -8,10 +8,29 @@ services:
     restart: unless-stopped
     ports:
       - "8080:80"
+    depends_on:
+      - postgres
     environment:
       PORT: 80
-      MYSQL_ROOT_PASSWORD: titan_root_pass
+      DB_HOST: postgres
+      DB_PORT: 5432
       DB_NAME: titan_db
-      DB_HOST: 127.0.0.1
-      DB_USER: root
-      DB_PASS: titan_root_pass
+      DB_USER: postgres
+      DB_PASS: titan_pass
+      DB_SSLMODE: disable
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: titan_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: titan_pass
+      POSTGRES_DB: titan_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+volumes:
+  postgres_data:

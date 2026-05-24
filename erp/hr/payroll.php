@@ -12,14 +12,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $bonus = (float) ($_POST['bonus'] ?? 0);
     $ded = (float) ($_POST['deductions'] ?? 0);
     $net = $base + $bonus - $ded;
-    db()->prepare('INSERT INTO payroll (employee_id, month, year, base_salary, bonus, deductions, net_salary, status) VALUES (?,?,?,?,?,?,?,?) ON DUPLICATE KEY UPDATE base_salary=VALUES(base_salary), bonus=VALUES(bonus), deductions=VALUES(deductions), net_salary=VALUES(net_salary)')
+    db()->prepare('INSERT INTO payroll (employee_id, month, year, base_salary, bonus, deductions, net_salary, status) VALUES (?,?,?,?,?,?,?,?) ON CONFLICT (employee_id, month, year) DO UPDATE SET base_salary=EXCLUDED.base_salary, bonus=EXCLUDED.bonus, deductions=EXCLUDED.deductions, net_salary=EXCLUDED.net_salary')
         ->execute([$empId, $month, $year, $base, $bonus, $ded, $net, 'pending']);
     flash('success', __('success_saved'));
     redirect(url('hr/payroll.php?month='.$month.'&year='.$year));
 }
 
 if (isset($_GET['pay'])) {
-    db()->prepare("UPDATE payroll SET status = 'paid', paid_at = CURDATE() WHERE id = ?")->execute([(int)$_GET['pay']]);
+    db()->prepare("UPDATE payroll SET status = 'paid', paid_at = CURRENT_DATE WHERE id = ?")->execute([(int)$_GET['pay']]);
     flash('success', __('success_saved'));
     redirect(url('hr/payroll.php?month='.$month.'&year='.$year));
 }

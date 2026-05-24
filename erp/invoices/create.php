@@ -24,7 +24,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $invNum = generateNumber('INV');
         $pdo->prepare('INSERT INTO invoices (invoice_number, customer_id, subtotal, tax_rate, tax_amount, discount, total, status, due_date, notes, user_id) VALUES (?,?,?,?,?,?,?,?,?,?,?)')
             ->execute([$invNum, $customerId, $subtotal, $taxRate, $taxAmount, $discount, $total, $_POST['status'] ?? 'draft', $_POST['due_date'] ?: null, trim($_POST['notes'] ?? ''), $_SESSION['user_id']]);
-        $invoiceId = (int) $pdo->lastInsertId();
+        $invoiceId = dbLastInsertId($pdo, 'invoices');
         foreach ($items as $item) {
             if (empty($item['description'])) continue;
             $lineTotal = (float)$item['quantity'] * (float)$item['unit_price'];

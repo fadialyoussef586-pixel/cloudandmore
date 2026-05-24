@@ -14,9 +14,9 @@ $checks[] = [
 ];
 
 $checks[] = [
-    'label' => 'PDO MySQL',
-    'ok' => extension_loaded('pdo_mysql'),
-    'detail' => extension_loaded('pdo_mysql') ? 'مفعّل' : 'غير مفعّل — ثبّت pdo_mysql',
+    'label' => 'PDO PostgreSQL',
+    'ok' => extension_loaded('pdo_pgsql'),
+    'detail' => extension_loaded('pdo_pgsql') ? 'مفعّل' : 'غير مفعّل — ثبّت pdo_pgsql',
 ];
 
 $checks[] = [
@@ -34,18 +34,17 @@ $checks[] = [
 $dbOk = false;
 $dbDetail = '';
 try {
-    $dsn = 'mysql:host=' . DB_HOST . ';charset=' . DB_CHARSET;
-    $pdo = new PDO($dsn, DB_USER, DB_PASS, [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]);
-    $pdo->exec('USE `' . DB_NAME . '`');
-    $tables = $pdo->query("SHOW TABLES LIKE 'users'")->fetch();
-    $dbOk = (bool) $tables;
-    $dbDetail = $dbOk ? 'متصل — الجداول موجودة' : 'متصل — شغّل setup.php لإنشاء الجداول';
+    $pdo = db();
+    $dbOk = databaseTableExists($pdo, 'users');
+    $dbDetail = $dbOk
+        ? 'متصل — ' . DB_NAME . ' @ ' . DB_HOST
+        : 'متصل — شغّل setup.php لإنشاء الجداول';
 } catch (Throwable $e) {
     $dbDetail = $e->getMessage();
 }
 
 $checks[] = [
-    'label' => 'MySQL',
+    'label' => 'PostgreSQL',
     'ok' => $dbOk,
     'detail' => $dbDetail,
 ];
