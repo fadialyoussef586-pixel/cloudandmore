@@ -11,7 +11,74 @@ ensureTreasuryTables();
 $pageTitle = __('purchases');
 
 $totalDebts = totalSupplierDebts();
-$treasuryBal = 0.0;
+$treasuryBal = cashAccountBalance();
+
+if (isset($_GET['delete'])) {
+    requireDelete();
+    $id = (int) $_GET['delete'];
+    $pdo = db();
+    $pdo->beginTransaction();
+    try {
+        $stmt = $pdo->prepare(
+            'SELECT p.*, s.name AS supplier_name
+             FROM purchases p
+             JOIN suppliers s ON s.id = p.supplier_id
+             WHERE p.id = ?
+             FOR UPDATE'
+        );
+        $stmt->execute([$id]);
+        $purchase = $stmt->fetch();
+        if (!$purchase) {
+            throw new RuntimeException('not_found');
+        }
+
+        $paymentStmt = $pdo->prepare('SELECT COUNT(*) FROM supplier_debt_payments WHERE purchase_id = ?');
+        $paymentStmt->execute([$id]);
+        if ((int) $paymentStmt->fetchColumn() > 0) {
+            throw new RuntimeException('purchase_has_payments');
+        }
+
+        $productId = (int) ($purchase['product_id'] ?? 0);
+        $qty = (int) ($purchase['quantity'] ?? 0);
+        if ($productId > 0 && $qty > 0) {
+            $productStmt = $pdo->prepare('SELECT quantity FROM products WHERE id = ? FOR UPDATE');
+            $productStmt->execute([$productId]);
+            $currentQty = (int) $productStmt->fetchColumn();
+            if ($currentQty < $qty) {
+                throw new RuntimeException('purchase_stock_used');
+            }
+
+            $pdo->prepare('UPDATE products SET quantity = quantity - ? WHERE id = ?')
+                ->execute([$qty, $productId]);
+        }
+
+        $amountPaid = (float) ($purchase['amount_paid'] ?? 0);
+        if ($amountPaid > 0) {
+            recordTreasuryMovement(
+                'deposit',
+                $amountPaid,
+                'purchase_reversal',
+                __('delete') . ' — ' . (string) ($purchase['purchase_number'] ?? '') . ' / ' . (string) ($purchase['supplier_name'] ?? ''),
+                $_SESSION['user_id'] ?? null,
+                $pdo
+            );
+        }
+
+        $pdo->prepare('DELETE FROM purchases WHERE id = ?')->execute([$id]);
+        $pdo->commit();
+        flash('success', __('success_deleted'));
+    } catch (Throwable $e) {
+        if ($pdo->inTransaction()) {
+            $pdo->rollBack();
+        }
+        $errors = [
+            'purchase_has_payments' => __('error'),
+            'purchase_stock_used' => __('error'),
+        ];
+        flash('error', $errors[$e->getMessage()] ?? __('error'));
+    }
+    redirect(url('purchases/index.php'));
+}
 
 $purchases = db()->query("
     SELECT p.*, s.name AS supplier_name
@@ -57,6 +124,7 @@ require __DIR__ . '/../includes/header.php';
                     <th><?= e(__('payment_method')) ?></th>
                     <th><?= e(__('debt_balance')) ?></th>
                     <th><?= e(__('date')) ?></th>
+                    <th><?= e(__('actions')) ?></th>
                 </tr>
             </thead>
             <tbody>
@@ -72,6 +140,13 @@ require __DIR__ . '/../includes/header.php';
                         <?= formatMoney((float) $p['debt_balance']) ?>
                     </td>
                     <td><?= formatDate($p['created_at']) ?></td>
+                    <td class="table-actions">
+                        <a href="<?= url('purchases/view.php?id=' . $p['id']) ?>" class="btn btn-secondary btn-sm"><?= e(__('view')) ?></a>
+                        <a href="<?= url('purchases/view.php?id=' . $p['id'] . '&autoprint=1') ?>" class="btn btn-secondary btn-sm" onclick="window.open(this.href, '_blank', 'noopener'); return false;"><?= e(__('print')) ?></a>
+                        <?php if (canDelete()): ?>
+                            <a href="<?= url('purchases/index.php?delete=' . $p['id']) ?>" class="btn btn-danger btn-sm" data-confirm="<?= e(__('confirm_delete')) ?>"><?= e(__('delete')) ?></a>
+                        <?php endif; ?>
+                    </td>
                 </tr>
                 <?php endforeach; ?>
             </tbody>

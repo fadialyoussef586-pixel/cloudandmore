@@ -1838,3 +1838,53 @@ body.sidebar-collapsed .nav-item::before {
     width: 100%;
   }
 }
+
+.content {
+  padding-bottom: calc(7rem + env(safe-area-inset-bottom, 0px));
+}
+
+.table-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  align-items: center;
+  justify-content: flex-start;
+  position: relative;
+  z-index: 2;
+}
+
+.table-actions .btn {
+  position: relative;
+  z-index: 3;
+  pointer-events: auto;
+}
+
+.floating-action-menu {
+  top: 5.15rem;
+  bottom: auto;
+  z-index: 165;
+  pointer-events: none;
+}
+
+.floating-action-toggle,
+.floating-action-panel,
+.floating-action-item {
+  pointer-events: auto;
+}
+
+.floating-action-toggle {
+  min-height: 48px;
+  padding: 0.8rem 0.95rem;
+}
+
+@media (max-width: 768px) {
+  .content {
+    padding-bottom: calc(9rem + env(safe-area-inset-bottom, 0px));
+  }
+
+  .floating-action-menu {
+    top: auto;
+    bottom: calc(0.85rem + env(safe-area-inset-bottom, 0px));
+    z-index: 320;
+  }
+}

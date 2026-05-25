@@ -2,12 +2,13 @@
 
 require_once __DIR__ . '/../includes/functions.php';
 require_once __DIR__ . '/../includes/auth.php';
+requireAuth();
 requirePermission(PERM_TREASURY);
 
 ensureTreasuryTables();
 
 $pageTitle = __('treasury');
-$balance = 0.0;
+$balance = cashAccountBalance();
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $type = $_POST['type'] === 'withdrawal' ? 'withdrawal' : 'deposit';
@@ -15,15 +16,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $description = trim($_POST['description'] ?? '');
 
     if ($amount > 0) {
-        $category = $type === 'deposit' ? 'external_funding' : 'other';
-        recordTreasuryMovement(
-            $type,
-            $amount,
-            $category,
-            $description !== '' ? $description : __('external_funding_default'),
-            $_SESSION['user_id'] ?? null
-        );
-        flash('success', __('success_saved'));
+        try {
+            recordTreasuryMovement(
+                $type,
+                $amount,
+                $type === 'deposit' ? 'cash_manual_in' : 'cash_manual_out',
+                $description !== '' ? $description : __('external_funding_default'),
+                $_SESSION['user_id'] ?? null,
+                db()
+            );
+            flash('success', __('success_saved'));
+        } catch (Throwable $e) {
+            flash('error', $e->getMessage() === 'insufficient_treasury' ? __('insufficient_treasury') : __('error'));
+        }
         redirect(url('treasury/index.php'));
     }
     flash('error', __('invalid_amount'));

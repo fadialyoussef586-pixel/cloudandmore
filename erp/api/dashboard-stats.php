@@ -9,18 +9,18 @@ header('Content-Type: application/json; charset=utf-8');
 header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
 header('Pragma: no-cache');
 
-$invoiceCount = 0;
-$treasuryRowCount = 0;
-$revenue = 0.0;
-$treasury = 0.0;
+ensureTreasuryTables();
+
+$invoiceCount = (int) db()->query('SELECT COUNT(*) FROM invoices')->fetchColumn();
+$cashMovementCount = (int) db()->query('SELECT COUNT(*) FROM treasury_transactions')->fetchColumn();
+$cashBalance = cashAccountBalance();
 
 echo json_encode([
     'invoices' => $invoiceCount,
-    'treasury_rows' => $treasuryRowCount,
-    'revenue' => $revenue,
-    'treasury' => $treasury,
-    'revenue_display' => formatMoney($revenue),
-    'treasury_display' => formatMoney($treasury),
-    'forced_zero' => true,
+    'cash_rows' => $cashMovementCount,
+    'cash_balance' => $cashBalance,
+    'cash_display' => formatMoney($cashBalance),
+    'treasury_rows' => $cashMovementCount,
+    'treasury_display' => formatMoney($cashBalance),
     'ts' => time(),
 ], JSON_UNESCAPED_UNICODE);

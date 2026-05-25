@@ -15,17 +15,19 @@ function ensurePurchaseSchema(): void
     $done = true;
 }
 
-function treasuryWithdrawForPurchase(float $amountUsd, string $description, ?int $userId): void
+function treasuryWithdrawForPurchase(float $amountUsd, string $description, ?int $userId, ?PDO $pdo = null): void
 {
     if ($amountUsd <= 0) {
         return;
     }
 
-    if (treasuryBalance() < $amountUsd) {
+    $pdo = $pdo ?: db();
+
+    if (cashAccountBalance($pdo) < $amountUsd) {
         throw new RuntimeException('insufficient_treasury');
     }
 
-    recordTreasuryMovement('withdrawal', $amountUsd, 'purchase', $description, $userId);
+    recordTreasuryMovement('withdrawal', $amountUsd, 'purchase', $description, $userId, $pdo);
 }
 
 function supplierDebtBalance(int $supplierId): float
@@ -116,7 +118,8 @@ function payPurchaseDebt(int $purchaseId, float $amount, ?int $userId, string $n
         treasuryWithdrawForPurchase(
             $amount,
             __('treasury_purchase_debt') . ' — ' . $purchase['purchase_number'] . ' / ' . $supplierName,
-            $userId
+            $userId,
+            $pdo
         );
 
         $newDebt = round($debt - $amount, 2);

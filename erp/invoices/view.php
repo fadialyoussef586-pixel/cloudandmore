@@ -7,6 +7,7 @@ requirePermission(PERM_INVOICES);
 
 ensureInvoiceSchema();
 ensureInvoiceReturnsSchema();
+ensureTreasuryTables();
 
 $id = (int) ($_GET['id'] ?? 0);
 
@@ -34,7 +35,8 @@ if (isset($_GET['pay'])) {
                 (float) ($paymentInvoice['total'] ?? 0),
                 (string) ($paymentInvoice['invoice_number'] ?? ''),
                 (string) ($paymentInvoice['customer_name'] ?? ''),
-                $_SESSION['user_id'] ?? null
+                $_SESSION['user_id'] ?? null,
+                $pdo
             );
         }
 
@@ -102,6 +104,7 @@ if ($customerNameDisplay === '') {
 }
 $customerPhone = trim((string) ($invoice['phone'] ?? ''));
 $hasDiscount = (float) ($invoice['discount'] ?? 0) > 0;
+$autoPrint = isset($_GET['autoprint']) && $_GET['autoprint'] === '1';
 
 $pageTitle = $invoice['invoice_number'];
 require __DIR__ . '/../includes/header.php';
@@ -115,7 +118,7 @@ require __DIR__ . '/../includes/header.php';
     <?php if (canDelete()): ?>
     <a href="<?= url('invoices/index.php?delete=' . $id) ?>" class="btn btn-danger" data-confirm="<?= e(__('confirm_delete')) ?>"><?= e(__('delete')) ?></a>
     <?php endif; ?>
-    <button type="button" onclick="window.print()" class="btn btn-secondary"><?= e(__('print')) ?></button>
+    <button type="button" onclick="window.print(); return false;" class="btn btn-secondary"><?= e(__('print')) ?></button>
 </div>
 
 <article class="invoice-print card">
@@ -433,4 +436,11 @@ require __DIR__ . '/../includes/header.php';
   });
 })();
 </script>
+<?php if ($autoPrint): ?>
+<script>
+window.addEventListener('load', function () {
+  window.print();
+});
+</script>
+<?php endif; ?>
 <?php require __DIR__ . '/../includes/footer.php'; ?>

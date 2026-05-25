@@ -8,7 +8,8 @@ ensureTreasuryTables();
 $pdo = db();
 
 $invoiceCount = (int) $pdo->query('SELECT COUNT(*) FROM invoices')->fetchColumn();
-$treasuryRowCount = (int) $pdo->query('SELECT COUNT(*) FROM treasury_transactions')->fetchColumn();
+$cashRowCount = (int) $pdo->query('SELECT COUNT(*) FROM treasury_transactions')->fetchColumn();
+$cashBalance = cashAccountBalance($pdo);
 
 $pageTitle = __('dashboard');
 
@@ -19,9 +20,8 @@ $stats = [
     'invoices' => $invoiceCount,
     'deliveries' => (int) $pdo->query("SELECT COUNT(*) FROM deliveries WHERE status IN ('pending','in_transit')")->fetchColumn(),
     'employees' => (int) $pdo->query("SELECT COUNT(*) FROM employees WHERE status = 'active'")->fetchColumn(),
-    'revenue' => 0.0,
-    'treasury' => 0.0,
-    'treasury_rows' => $treasuryRowCount,
+    'cash' => $cashBalance,
+    'cash_rows' => $cashRowCount,
 ];
 
 $recentOrders = db()->query("SELECT * FROM orders ORDER BY created_at DESC LIMIT 5")->fetchAll();
@@ -71,16 +71,10 @@ require __DIR__ . '/includes/header.php';
         <div class="label"><?= e(__('total_employees')) ?></div>
         <div class="value"><?= $stats['employees'] ?></div>
     </div>
-    <div class="stat-card success">
-        <div class="label"><?= e(__('revenue_month')) ?></div>
-        <div class="value" id="dashboard-revenue"><?= formatMoney(0.0) ?></div>
-    </div>
-    <?php if (in_array($_SESSION['user_role'] ?? '', ['admin', 'manager'], true)): ?>
     <div class="stat-card primary">
         <div class="label"><?= e(__('treasury_balance')) ?></div>
-        <div class="value" id="dashboard-treasury" style="font-size:1.1rem"><?= formatMoney(0.0) ?></div>
+        <div class="value" id="dashboard-cash" style="font-size:1.1rem"><?= formatMoney($stats['cash']) ?></div>
     </div>
-    <?php endif; ?>
 </div>
 
 
@@ -157,23 +151,19 @@ require __DIR__ . '/includes/header.php';
 
 <script>
 (function () {
-  var zeroMoney = <?= json_encode(formatMoney(0.0), JSON_UNESCAPED_UNICODE) ?>;
+  var fallbackMoney = <?= json_encode(formatMoney($stats['cash']), JSON_UNESCAPED_UNICODE) ?>;
   fetch('<?= url('api/dashboard-stats.php') ?>?_=' + Date.now(), { credentials: 'same-origin', cache: 'no-store' })
     .then(function (r) {
       if (!r.ok) throw new Error('dashboard-stats request failed');
       return r.json();
     })
     .then(function (d) {
-      var rev = document.getElementById('dashboard-revenue');
-      var tr = document.getElementById('dashboard-treasury');
-      if (rev) rev.textContent = d.revenue_display || zeroMoney;
-      if (tr) tr.textContent = d.treasury_display || zeroMoney;
+      var cash = document.getElementById('dashboard-cash');
+      if (cash) cash.textContent = d.cash_display || d.treasury_display || fallbackMoney;
     })
     .catch(function () {
-      var rev = document.getElementById('dashboard-revenue');
-      var tr = document.getElementById('dashboard-treasury');
-      if (rev) rev.textContent = zeroMoney;
-      if (tr) tr.textContent = zeroMoney;
+      var cash = document.getElementById('dashboard-cash');
+      if (cash) cash.textContent = fallbackMoney;
     });
 })();
 </script>

@@ -5,6 +5,7 @@ require_once __DIR__ . '/../config/database.php';
 function businessDataTables(): array
 {
     return [
+        'cash_accounts',
         'invoice_returns',
         'supplier_debt_payments',
         'purchases',
@@ -83,7 +84,7 @@ function resetBusinessDataVerified(PDO $pdo): bool
     for ($i = 0; $i < 3; $i++) {
         nuclearZeroData($pdo);
         $totals = financialTotals($pdo);
-        if ($totals['treasury'] == 0.0 && $totals['revenue'] == 0.0 && $totals['invoices'] === 0) {
+        if ($totals['treasury'] == 0.0 && $totals['invoices'] === 0) {
             return true;
         }
     }
@@ -93,30 +94,17 @@ function resetBusinessDataVerified(PDO $pdo): bool
 
 function monthlyRevenue(PDO $pdo): float
 {
-    try {
-        $count = (int) $pdo->query('SELECT COUNT(*) FROM invoices')->fetchColumn();
-        if ($count === 0) {
-            return 0.0;
-        }
-
-        return (float) $pdo->query(
-            "SELECT COALESCE(SUM(total), 0) FROM invoices
-             WHERE status = 'paid'
-               AND invoice_type = 'sale'
-               AND MONTH(created_at) = MONTH(CURRENT_DATE())
-               AND YEAR(created_at) = YEAR(CURRENT_DATE())"
-        )->fetchColumn();
-    } catch (Throwable) {
-        return 0.0;
-    }
+    return 0.0;
 }
 
 function treasuryBalanceFromDb(PDO $pdo): float
 {
     try {
-        $count = (int) $pdo->query('SELECT COUNT(*) FROM treasury_transactions')->fetchColumn();
-        if ($count === 0) {
-            return 0.0;
+        if (databaseTableExists($pdo, 'cash_accounts')) {
+            $stmt = $pdo->query('SELECT balance FROM cash_accounts WHERE id = 1 LIMIT 1');
+            $balance = $stmt ? $stmt->fetchColumn() : 0;
+
+            return round((float) $balance, 2);
         }
 
         return (float) $pdo->query(
@@ -132,7 +120,7 @@ function financialTotals(PDO $pdo): array
 {
     return [
         'treasury' => treasuryBalanceFromDb($pdo),
-        'revenue' => monthlyRevenue($pdo),
+        'revenue' => 0.0,
         'invoices' => (int) ($pdo->query('SELECT COUNT(*) FROM invoices')->fetchColumn() ?? 0),
         'treasury_rows' => (int) ($pdo->query('SELECT COUNT(*) FROM treasury_transactions')->fetchColumn() ?? 0),
     ];

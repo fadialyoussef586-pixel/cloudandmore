@@ -28,44 +28,173 @@ function formatMoneyHtml(float $amount): string
     return '<span class="money-usd">' . e($value) . ' <span class="currency-usd">' . CURRENCY_CODE . '</span></span>';
 }
 
-function treasuryBalance(): float
-{
-    return treasuryBalanceFromDb(db());
-}
-
 function ensureTreasuryTables(): void
 {
     static $done = false;
     if ($done) {
         return;
     }
+
+    $pdo = db();
     $path = BASE_PATH . '/database/migrate_currency_treasury.sql';
     if (is_file($path)) {
-        runSqlFile(db(), $path);
+        runSqlFile($pdo, $path);
     }
+
+    $pdo->exec(
+        "CREATE TABLE IF NOT EXISTS cash_accounts (
+            id INT PRIMARY KEY,
+            name VARCHAR(120) NOT NULL,
+            currency ENUM('SAR', 'USD') NOT NULL DEFAULT 'USD',
+            balance DECIMAL(14,2) NOT NULL DEFAULT 0,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+        )"
+    );
+
+    $columnExists = static function (PDO $pdo, string $table, string $column): bool {
+        $stmt = $pdo->prepare(
+            'SELECT COUNT(*) FROM information_schema.COLUMNS
+             WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? AND COLUMN_NAME = ?'
+        );
+        $stmt->execute([$table, $column]);
+
+        return (int) $stmt->fetchColumn() > 0;
+    };
+
+    if (!$columnExists($pdo, 'treasury_transactions', 'cash_account_id')) {
+        $pdo->exec(
+            'ALTER TABLE treasury_transactions
+             ADD COLUMN cash_account_id INT NOT NULL DEFAULT 1 AFTER user_id'
+        );
+    }
+
+    if (!$columnExists($pdo, 'treasury_transactions', 'balance_after')) {
+        $pdo->exec(
+            'ALTER TABLE treasury_transactions
+             ADD COLUMN balance_after DECIMAL(14,2) NOT NULL DEFAULT 0 AFTER cash_account_id'
+        );
+    }
+
+    $existingBalance = (float) $pdo->query(
+        "SELECT COALESCE(SUM(CASE WHEN type = 'deposit' THEN amount_sar ELSE -amount_sar END), 0)
+         FROM treasury_transactions"
+    )->fetchColumn();
+
+    $exists = (int) $pdo->query('SELECT COUNT(*) FROM cash_accounts WHERE id = 1')->fetchColumn();
+    if ($exists === 0) {
+        $pdo->prepare(
+            'INSERT INTO cash_accounts (id, name, currency, balance) VALUES (1, ?, ?, ?)'
+        )->execute([
+            'Main Cash Account',
+            in_array(CURRENCY_CODE, ['SAR', 'USD'], true) ? CURRENCY_CODE : 'USD',
+            $existingBalance,
+        ]);
+    }
+
     $done = true;
 }
 
-function recordTreasuryMovement(string $type, float $amountUsd, string $category, string $description, ?int $userId): void
+function cashAccountBalance(?PDO $pdo = null): float
 {
+    ensureTreasuryTables();
+
+    $pdo = $pdo ?: db();
+    try {
+        $stmt = $pdo->query('SELECT balance FROM cash_accounts WHERE id = 1 LIMIT 1');
+        $value = $stmt ? $stmt->fetchColumn() : 0;
+
+        return round((float) $value, 2);
+    } catch (Throwable) {
+        return 0.0;
+    }
+}
+
+function treasuryBalance(): float
+{
+    return cashAccountBalance(db());
+}
+
+function recordCashMovement(
+    string $type,
+    float $amountUsd,
+    string $category,
+    string $description,
+    ?int $userId,
+    ?PDO $pdo = null
+): void {
     ensureTreasuryTables();
 
     if ($amountUsd <= 0) {
         return;
     }
 
-    $ref = generateNumber('TRS');
-    db()->prepare(
-        'INSERT INTO treasury_transactions (reference_number, type, category, currency, amount, amount_sar, description, user_id)
-         VALUES (?,?,?,?,?,?,?,?)'
-    )->execute([
-        $ref,
-        $type,
-        $category,
-        CURRENCY_CODE,
-        $amountUsd,
-        $amountUsd,
-        $description,
-        $userId,
-    ]);
+    $pdo = $pdo ?: db();
+    $movementType = $type === 'withdrawal' ? 'withdrawal' : 'deposit';
+    $startedTransaction = false;
+
+    if (!$pdo->inTransaction()) {
+        $pdo->beginTransaction();
+        $startedTransaction = true;
+    }
+
+    try {
+        $stmt = $pdo->query('SELECT id, balance FROM cash_accounts WHERE id = 1 FOR UPDATE');
+        $account = $stmt ? $stmt->fetch() : false;
+        if (!$account) {
+            throw new RuntimeException('cash_account_missing');
+        }
+
+        $currentBalance = round((float) ($account['balance'] ?? 0), 2);
+        $newBalance = $movementType === 'deposit'
+            ? round($currentBalance + $amountUsd, 2)
+            : round($currentBalance - $amountUsd, 2);
+
+        if ($movementType === 'withdrawal' && $newBalance < 0) {
+            throw new RuntimeException('insufficient_treasury');
+        }
+
+        $pdo->prepare('UPDATE cash_accounts SET balance = ? WHERE id = ?')->execute([
+            $newBalance,
+            (int) $account['id'],
+        ]);
+
+        $ref = generateNumber('CSH');
+        $pdo->prepare(
+            'INSERT INTO treasury_transactions (reference_number, type, category, currency, amount, amount_sar, description, user_id, cash_account_id, balance_after)
+             VALUES (?,?,?,?,?,?,?,?,?,?)'
+        )->execute([
+            $ref,
+            $movementType,
+            $category,
+            in_array(CURRENCY_CODE, ['SAR', 'USD'], true) ? CURRENCY_CODE : 'USD',
+            $amountUsd,
+            $amountUsd,
+            $description,
+            $userId,
+            (int) $account['id'],
+            $newBalance,
+        ]);
+
+        if ($startedTransaction) {
+            $pdo->commit();
+        }
+    } catch (Throwable $e) {
+        if ($startedTransaction && $pdo->inTransaction()) {
+            $pdo->rollBack();
+        }
+
+        throw $e;
+    }
+}
+
+function recordTreasuryMovement(
+    string $type,
+    float $amountUsd,
+    string $category,
+    string $description,
+    ?int $userId,
+    ?PDO $pdo = null
+): void {
+    recordCashMovement($type, $amountUsd, $category, $description, $userId, $pdo);
 }

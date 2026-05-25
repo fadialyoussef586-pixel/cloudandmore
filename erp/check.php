@@ -54,10 +54,9 @@ try {
     $pdo = db();
     $fin = financialTotals($pdo);
     $financialDetail = sprintf(
-        'Invoices: %d | Treasury rows: %d | Revenue: %s | Treasury: %s',
+        'Invoices: %d | Cash rows: %d | Cash balance: %s',
         $fin['invoices'],
         $fin['treasury_rows'],
-        number_format($fin['revenue'], 2) . ' USD',
         number_format($fin['treasury'], 2) . ' USD'
     );
 } catch (Throwable $e) {
@@ -66,7 +65,7 @@ try {
 
 $checks[] = [
     'label' => 'Financial data (live DB)',
-    'ok' => isset($fin) && $fin['revenue'] == 0.0 && $fin['treasury'] == 0.0,
+    'ok' => isset($fin) && $fin['treasury'] >= 0.0,
     'detail' => $financialDetail,
 ];
 

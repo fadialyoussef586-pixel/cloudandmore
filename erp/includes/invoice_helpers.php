@@ -118,7 +118,13 @@ function invoiceShouldCreateImmediateTreasuryEntry(string $invoiceType, string $
     return $invoiceType === 'sale' && $paymentMethod !== 'deferred';
 }
 
-function recordInvoiceTreasuryDeposit(float $amountUsd, string $invoiceNumber, string $customerName, ?int $userId): void
+function recordInvoiceTreasuryDeposit(
+    float $amountUsd,
+    string $invoiceNumber,
+    string $customerName,
+    ?int $userId,
+    ?PDO $pdo = null
+): void
 {
     if ($amountUsd <= 0) {
         return;
@@ -130,7 +136,7 @@ function recordInvoiceTreasuryDeposit(float $amountUsd, string $invoiceNumber, s
         $description .= ' / ' . $customerName;
     }
 
-    recordTreasuryMovement('deposit', $amountUsd, 'sale', $description, $userId);
+    recordTreasuryMovement('deposit', $amountUsd, 'sale', $description, $userId, $pdo);
 }
 
 function invoiceSerialExists(string $serial, ?int $excludeInvoiceId = null): bool

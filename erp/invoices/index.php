@@ -6,16 +6,44 @@ requireAuth();
 requirePermission(PERM_INVOICES);
 
 ensureInvoiceSchema();
+ensureTreasuryTables();
 
 if (isset($_GET['pay'])) {
     $id = (int) $_GET['pay'];
-    db()->prepare("UPDATE invoices
-                   SET status = 'paid'
-                   WHERE id = ?
-                     AND payment_method = 'deferred'
-                     AND invoice_type = 'sale'
-                     AND status != 'paid'")
-        ->execute([$id]);
+    $pdo = db();
+    $pdo->beginTransaction();
+    try {
+        $stmt = $pdo->prepare(
+            "SELECT i.*, c.name AS customer_name
+             FROM invoices i
+             LEFT JOIN customers c ON c.id = i.customer_id
+             WHERE i.id = ?
+             FOR UPDATE"
+        );
+        $stmt->execute([$id]);
+        $invoice = $stmt->fetch();
+        if ($invoice
+            && ($invoice['payment_method'] ?? '') === 'deferred'
+            && ($invoice['invoice_type'] ?? 'sale') === 'sale'
+            && ($invoice['status'] ?? '') !== 'paid'
+        ) {
+            $pdo->prepare("UPDATE invoices SET status = 'paid' WHERE id = ?")->execute([$id]);
+            recordInvoiceTreasuryDeposit(
+                (float) ($invoice['total'] ?? 0),
+                (string) ($invoice['invoice_number'] ?? ''),
+                (string) ($invoice['customer_name'] ?? ''),
+                $_SESSION['user_id'] ?? null,
+                $pdo
+            );
+        }
+        $pdo->commit();
+    } catch (Throwable $e) {
+        if ($pdo->inTransaction()) {
+            $pdo->rollBack();
+        }
+        flash('error', __('error'));
+        redirect(url('invoices/index.php'));
+    }
     flash('success', __('mark_paid'));
     redirect(url('invoices/index.php'));
 }
@@ -26,6 +54,19 @@ if (isset($_GET['delete'])) {
     $pdo = db();
     $pdo->beginTransaction();
     try {
+        $invoiceStmt = $pdo->prepare(
+            "SELECT i.*, c.name AS customer_name
+             FROM invoices i
+             LEFT JOIN customers c ON c.id = i.customer_id
+             WHERE i.id = ?
+             FOR UPDATE"
+        );
+        $invoiceStmt->execute([$id]);
+        $invoice = $invoiceStmt->fetch();
+        if (!$invoice) {
+            throw new RuntimeException('not_found');
+        }
+
         $items = $pdo->prepare('SELECT * FROM invoice_items WHERE invoice_id = ?');
         $items->execute([$id]);
         foreach ($items->fetchAll() as $row) {
@@ -34,11 +75,25 @@ if (isset($_GET['delete'])) {
                     ->execute([(int) $row['quantity'], (int) $row['product_id']]);
             }
         }
+
+        if (($invoice['invoice_type'] ?? 'sale') === 'sale' && ($invoice['status'] ?? '') === 'paid' && (float) ($invoice['total'] ?? 0) > 0) {
+            recordTreasuryMovement(
+                'withdrawal',
+                (float) $invoice['total'],
+                'sale_reversal',
+                __('delete') . ' — ' . (string) ($invoice['invoice_number'] ?? ''),
+                $_SESSION['user_id'] ?? null,
+                $pdo
+            );
+        }
+
         $pdo->prepare('DELETE FROM invoices WHERE id = ?')->execute([$id]);
         $pdo->commit();
         flash('success', __('success_deleted'));
     } catch (Throwable $e) {
-        $pdo->rollBack();
+        if ($pdo->inTransaction()) {
+            $pdo->rollBack();
+        }
         flash('error', __('error'));
     }
     redirect(url('invoices/index.php'));
@@ -101,8 +156,9 @@ require __DIR__ . '/../includes/header.php';
                     <td><?= paymentMethodBadge($inv['payment_method'] ?? 'cash') ?></td>
                     <td><?= formatMoney((float) $inv['total']) ?></td>
                     <td><?= formatDate($inv['created_at']) ?></td>
-                    <td>
+                    <td class="table-actions">
                         <a href="<?= url('invoices/view.php?id=' . $inv['id']) ?>" class="btn btn-secondary btn-sm"><?= e(__('view')) ?></a>
+                        <a href="<?= url('invoices/view.php?id=' . $inv['id'] . '&autoprint=1') ?>" class="btn btn-secondary btn-sm" onclick="window.open(this.href, '_blank', 'noopener'); return false;"><?= e(__('print')) ?></a>
                         <?php if (($inv['payment_method'] ?? '') === 'deferred' && ($inv['status'] ?? '') !== 'paid' && ($inv['invoice_type'] ?? 'sale') === 'sale'): ?>
                         <a href="<?= url('invoices/index.php?pay=' . $inv['id']) ?>" class="btn btn-success btn-sm"><?= e(__('mark_paid')) ?></a>
                         <?php endif; ?>

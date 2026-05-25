@@ -175,13 +175,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 (float) $totals['total'],
                 $invNum,
                 $customerName,
-                $_SESSION['user_id'] ?? null
+                $_SESSION['user_id'] ?? null,
+                $pdo
             );
         }
 
-        // Sync dynamic financial totals immediately after the write succeeds.
-        $treasuryBalanceNow = treasuryBalanceFromDb($pdo);
-        $monthlyRevenueNow = monthlyRevenue($pdo);
+        // Touch the persistent cash account inside the same transaction so
+        // sales are reflected immediately in the main cash box balance.
+        $cashBalanceNow = cashAccountBalance($pdo);
 
         $pdo->commit();
         flash('success', __('success_saved'));
@@ -201,7 +202,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             'customer_name' => __('customer_name_required'),
             'customer_phone' => __('customer_phone_required'),
         ];
-        unset($treasuryBalanceNow, $monthlyRevenueNow);
+        unset($cashBalanceNow);
         flash('error', $errors[$code] ?? __('error'));
     }
 }

@@ -19,7 +19,7 @@ foreach ($products as $p) {
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $pdo = db();
-    $pdo->beginTransaction();
+    $transactionStarted = false;
 
     try {
         $supplierId = (int) ($_POST['supplier_id'] ?? 0);
@@ -48,11 +48,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $supplierName->execute([$supplierId]);
         $supplierName = $supplierName->fetchColumn() ?: __('suppliers');
 
+        $pdo->beginTransaction();
+        $transactionStarted = true;
+
         if ($paymentMethod === 'cash') {
             treasuryWithdrawForPurchase(
                 $total,
                 __('treasury_purchase_cash') . ' — ' . $description . ' / ' . $supplierName,
-                $_SESSION['user_id'] ?? null
+                $_SESSION['user_id'] ?? null,
+                $pdo
             );
         }
 
@@ -81,7 +85,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         flash('success', __('success_saved'));
         redirect(url('purchases/index.php'));
     } catch (Throwable $e) {
-        $pdo->rollBack();
+        if ($transactionStarted && $pdo->inTransaction()) {
+            $pdo->rollBack();
+        }
         $errors = [
             'supplier' => __('supplier_required'),
             'product' => __('invoice_product_required'),
