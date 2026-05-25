@@ -35,11 +35,13 @@ $pageTitle = __('invoices');
 
 $invoices = db()->query("
     SELECT i.*, c.name AS customer_name,
-           ii.description AS product_name,
-           ii.serial_number
+           MIN(ii.description) AS product_name,
+           MIN(ii.serial_number) AS serial_number,
+           COUNT(ii.id) AS item_count
     FROM invoices i
     JOIN customers c ON c.id = i.customer_id
     LEFT JOIN invoice_items ii ON ii.invoice_id = i.id
+    GROUP BY i.id, c.name
     ORDER BY i.created_at DESC
 ")->fetchAll();
 
@@ -68,10 +70,19 @@ require __DIR__ . '/../includes/header.php';
             </thead>
             <tbody>
                 <?php foreach ($invoices as $inv): ?>
+                <?php
+                    $itemCount = (int) ($inv['item_count'] ?? 0);
+                    $productSummary = trim((string) ($inv['product_name'] ?? ''));
+                    if ($productSummary === '') {
+                        $productSummary = '-';
+                    } elseif ($itemCount > 1) {
+                        $productSummary .= ' +' . ($itemCount - 1);
+                    }
+                ?>
                 <tr>
                     <td><?= e($inv['invoice_number']) ?></td>
-                    <td><?= e($inv['product_name'] ?? '-') ?></td>
-                    <td><code class="serial-code"><?= e($inv['serial_number'] ?? '-') ?></code></td>
+                    <td><?= e($productSummary) ?></td>
+                    <td><code class="serial-code"><?= e($itemCount > 1 ? '-' : ($inv['serial_number'] ?? '-')) ?></code></td>
                     <td><?= paymentMethodBadge($inv['payment_method'] ?? 'cash') ?></td>
                     <td><?= formatMoney((float) $inv['total']) ?></td>
                     <td><?= formatDate($inv['created_at']) ?></td>

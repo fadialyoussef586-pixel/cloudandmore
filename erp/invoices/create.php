@@ -12,9 +12,10 @@ $products = db()->query('SELECT id, sku, name_ar, name_en, sell_price FROM produ
 $productsById = [];
 $productSearchData = [];
 foreach ($products as $p) {
-    $productsById[(int) $p['id']] = $p;
+    $productId = (int) $p['id'];
+    $productsById[$productId] = $p;
     $productSearchData[] = [
-        'id' => (int) $p['id'],
+        'id' => $productId,
         'price' => (float) $p['sell_price'],
         'label' => trim(($p['sku'] ?? '') . ' - ' . productName($p)),
         'search' => strtolower(trim(
@@ -25,53 +26,91 @@ foreach ($products as $p) {
     ];
 }
 
+$defaultProductId = (int) ($products[0]['id'] ?? 0);
+$defaultProductPrice = isset($productsById[$defaultProductId])
+    ? (float) $productsById[$defaultProductId]['sell_price']
+    : 0.0;
+$formItems = $_POST['items'] ?? [[
+    'product_id' => $defaultProductId,
+    'quantity' => 1,
+    'serial_number' => '',
+    'unit_price' => $defaultProductPrice,
+]];
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $pdo = db();
     $pdo->beginTransaction();
 
     try {
-        $productId = (int) ($_POST['product_id'] ?? 0);
-        $qty = max(1, (int) ($_POST['quantity'] ?? 1));
-        $serial = trim($_POST['serial_number'] ?? '');
         $paymentMethod = normalizePaymentMethod($_POST['payment_method'] ?? 'cash');
         $customerName = trim($_POST['customer_name'] ?? '');
         $customerPhone = trim($_POST['customer_phone'] ?? '');
-        $unitPrice = round((float) ($_POST['unit_price'] ?? 0), 2);
+        $rawItems = is_array($_POST['items'] ?? null) ? $_POST['items'] : [];
+        $lineItems = [];
+        $seenSerials = [];
+        $listSubtotal = 0.0;
+        $finalTotal = 0.0;
 
-        if ($productId < 1 || !isset($productsById[$productId])) {
-            throw new RuntimeException('product');
-        }
-        if ($serial === '') {
-            throw new RuntimeException('serial');
-        }
         if ($customerName === '') {
             throw new RuntimeException('customer_name');
         }
         if ($customerPhone === '') {
             throw new RuntimeException('customer_phone');
         }
-        if (invoiceSerialExists($serial)) {
-            throw new RuntimeException('serial_duplicate');
+
+        foreach ($rawItems as $row) {
+            $productId = (int) ($row['product_id'] ?? 0);
+            $qty = max(1, (int) ($row['quantity'] ?? 1));
+            $serial = trim($row['serial_number'] ?? '');
+            $unitPrice = round((float) ($row['unit_price'] ?? 0), 2);
+            $isBlankRow = $productId < 1 && $serial === '' && $unitPrice <= 0;
+
+            if ($isBlankRow) {
+                continue;
+            }
+            if ($productId < 1 || !isset($productsById[$productId])) {
+                throw new RuntimeException('product');
+            }
+            if ($serial === '') {
+                throw new RuntimeException('serial');
+            }
+
+            $serialKey = strtolower($serial);
+            if (isset($seenSerials[$serialKey]) || invoiceSerialExists($serial)) {
+                throw new RuntimeException('serial_duplicate');
+            }
+            $seenSerials[$serialKey] = true;
+
+            $product = $productsById[$productId];
+            $defaultUnitPrice = (float) $product['sell_price'];
+            if ($defaultUnitPrice <= 0) {
+                throw new RuntimeException('price');
+            }
+            if ($unitPrice <= 0) {
+                throw new RuntimeException('unit_price');
+            }
+
+            $lineTotal = round($qty * $unitPrice, 2);
+            $listLineSubtotal = round($qty * $defaultUnitPrice, 2);
+            $listSubtotal += $listLineSubtotal;
+            $finalTotal += $lineTotal;
+            $lineItems[] = [
+                'product_id' => $productId,
+                'description' => productName($product),
+                'serial_number' => $serial,
+                'quantity' => $qty,
+                'unit_price' => $unitPrice,
+                'total' => $lineTotal,
+            ];
         }
 
-        $product = $productsById[$productId];
-        $defaultUnitPrice = (float) $product['sell_price'];
-        if ($defaultUnitPrice <= 0) {
-            throw new RuntimeException('price');
-        }
-        if ($unitPrice <= 0) {
-            throw new RuntimeException('unit_price');
+        if ($lineItems === []) {
+            throw new RuntimeException('items');
         }
 
-        $customerId = findOrCreateQuickCustomer(
-            $customerName,
-            $customerPhone
-        );
-
-        $lineTotal = $qty * $unitPrice;
-        $listSubtotal = $qty * $defaultUnitPrice;
-        $discount = max(0.0, $listSubtotal - $lineTotal);
-        $totals = invoiceTotalsFromLines(max($listSubtotal, $lineTotal), $discount);
+        $customerId = findOrCreateQuickCustomer($customerName, $customerPhone);
+        $discount = max(0.0, round($listSubtotal - $finalTotal, 2));
+        $totals = invoiceTotalsFromLines(max($listSubtotal, $finalTotal), $discount);
         $invNum = generateNumber('INV');
 
         $pdo->prepare(
@@ -92,21 +131,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         ]);
         $invoiceId = dbLastInsertId($pdo);
 
-        $pdo->prepare(
+        $insertItem = $pdo->prepare(
             'INSERT INTO invoice_items (invoice_id, product_id, description, serial_number, quantity, unit_price, total)
              VALUES (?,?,?,?,?,?,?)'
-        )->execute([
-            $invoiceId,
-            $productId,
-            productName($product),
-            $serial,
-            $qty,
-            $unitPrice,
-            $lineTotal,
-        ]);
-
-        $pdo->prepare('UPDATE products SET quantity = GREATEST(0, quantity - ?) WHERE id = ?')
-            ->execute([$qty, $productId]);
+        );
+        $updateStock = $pdo->prepare('UPDATE products SET quantity = GREATEST(0, quantity - ?) WHERE id = ?');
+        foreach ($lineItems as $item) {
+            $insertItem->execute([
+                $invoiceId,
+                $item['product_id'],
+                $item['description'],
+                $item['serial_number'],
+                $item['quantity'],
+                $item['unit_price'],
+                $item['total'],
+            ]);
+            $updateStock->execute([$item['quantity'], $item['product_id']]);
+        }
 
         $pdo->commit();
         flash('success', __('success_saved'));
@@ -115,6 +156,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $pdo->rollBack();
         $code = $e->getMessage();
         $errors = [
+            'items' => __('invoice_items_required'),
             'product' => __('invoice_product_required'),
             'serial' => __('invoice_serial_required'),
             'serial_duplicate' => __('invoice_serial_duplicate'),
@@ -127,16 +169,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
-$selectedProductId = (int) ($_POST['product_id'] ?? ($products[0]['id'] ?? 0));
-$defaultPreviewPrice = isset($productsById[$selectedProductId])
-    ? (float) $productsById[$selectedProductId]['sell_price']
-    : 0.0;
-$previewPrice = (float) ($_POST['unit_price'] ?? $defaultPreviewPrice);
-$previewQty = max(1, (int) ($_POST['quantity'] ?? 1));
-$previewLineTotal = $previewPrice * $previewQty;
-$previewListSubtotal = max($defaultPreviewPrice * $previewQty, $previewLineTotal);
-$previewDiscount = max(0.0, $previewListSubtotal - $previewLineTotal);
-$previewTotals = invoiceTotalsFromLines($previewListSubtotal, $previewDiscount);
+$previewListSubtotal = 0.0;
+$previewFinalTotal = 0.0;
+foreach ($formItems as $row) {
+    $productId = (int) ($row['product_id'] ?? 0);
+    $qty = max(1, (int) ($row['quantity'] ?? 1));
+    $unitPrice = round((float) ($row['unit_price'] ?? 0), 2);
+    $defaultUnitPrice = isset($productsById[$productId]) ? (float) $productsById[$productId]['sell_price'] : 0.0;
+    $previewListSubtotal += round($qty * $defaultUnitPrice, 2);
+    $previewFinalTotal += round($qty * $unitPrice, 2);
+}
+$previewDiscount = max(0.0, round($previewListSubtotal - $previewFinalTotal, 2));
+$previewTotals = invoiceTotalsFromLines(max($previewListSubtotal, $previewFinalTotal), $previewDiscount);
 
 require __DIR__ . '/../includes/header.php';
 ?>
@@ -144,78 +188,33 @@ require __DIR__ . '/../includes/header.php';
     <div class="card-header"><h2><?= e(__('sale_quick_title')) ?></h2></div>
     <div class="card-body">
         <form method="post" class="sale-form" id="saleForm">
-            <div class="form-group">
-                <label for="saleProductSearch"><?= e(__('product_search')) ?></label>
-                <input type="search" id="saleProductSearch" placeholder="<?= e(__('product_search_placeholder')) ?>" autocomplete="off">
-            </div>
-
-            <div class="form-group">
-                <label for="saleProduct"><?= e(__('product')) ?> *</label>
-                <select name="product_id" id="saleProduct" required>
-                    <option value="">--</option>
-                    <?php foreach ($products as $p): ?>
-                        <option value="<?= $p['id'] ?>"
-                            data-price="<?= e((string) $p['sell_price']) ?>"
-                            data-search="<?= e(strtolower(trim(($p['sku'] ?? '') . ' ' . ($p['name_ar'] ?? '') . ' ' . ($p['name_en'] ?? '')))) ?>"
-                            <?= (int) $p['id'] === $selectedProductId ? 'selected' : '' ?>>
-                            <?= e(trim(($p['sku'] ?? '') . ' - ' . productName($p))) ?> — <?= formatMoney((float) $p['sell_price']) ?>
-                        </option>
-                    <?php endforeach; ?>
-                </select>
-            </div>
-
             <div class="form-grid form-grid-2">
                 <div class="form-group">
-                    <label><?= e(__('quantity')) ?> *</label>
-                    <input type="number" name="quantity" id="saleQty" value="<?= $previewQty ?>" min="1" required>
+                    <label><?= e(__('customer')) ?> *</label>
+                    <input type="text" name="customer_name" value="<?= e($_POST['customer_name'] ?? '') ?>"
+                        placeholder="<?= e(__('customer_name_placeholder')) ?>" required>
                 </div>
                 <div class="form-group">
-                    <label><?= e(__('serial_number')) ?> *</label>
-                    <input type="text" name="serial_number" value="<?= e($_POST['serial_number'] ?? '') ?>"
-                        placeholder="<?= e(__('serial_number_placeholder')) ?>" required autocomplete="off">
+                    <label><?= e(__('phone')) ?> *</label>
+                    <input type="text" name="customer_phone" value="<?= e($_POST['customer_phone'] ?? '') ?>"
+                        placeholder="05xxxxxxxx" required>
                 </div>
             </div>
 
             <div class="form-grid form-grid-2">
                 <div class="form-group">
-                    <label><?= e(__('list_price')) ?></label>
-                    <input type="text" id="saleDefaultPrice" value="<?= e(number_format($defaultPreviewPrice, 2, '.', '')) ?>" readonly>
-                </div>
-                <div class="form-group">
-                    <label><?= e(__('price_after_discount')) ?> *</label>
-                    <input type="number" name="unit_price" id="saleUnitPrice"
-                        value="<?= e(number_format($previewPrice, 2, '.', '')) ?>"
-                        min="0.01" step="0.01" required>
-                </div>
-            </div>
-
-            <div class="form-group">
-                <label><?= e(__('payment_method')) ?> *</label>
-                <div class="payment-options">
-                    <label class="payment-option">
-                        <input type="radio" name="payment_method" value="cash"
-                            <?= ($_POST['payment_method'] ?? 'cash') !== 'transfer' ? 'checked' : '' ?>>
-                        <span><?= e(__('payment_cash')) ?></span>
-                    </label>
-                    <label class="payment-option">
-                        <input type="radio" name="payment_method" value="transfer"
-                            <?= ($_POST['payment_method'] ?? '') === 'transfer' ? 'checked' : '' ?>>
-                        <span><?= e(__('payment_transfer')) ?></span>
-                    </label>
-                </div>
-            </div>
-
-            <div class="sale-form-extra">
-                <div class="form-grid form-grid-2" style="margin-top:0.75rem">
-                    <div class="form-group">
-                        <label><?= e(__('customer')) ?> *</label>
-                        <input type="text" name="customer_name" value="<?= e($_POST['customer_name'] ?? '') ?>"
-                            placeholder="<?= e(__('customer_name_placeholder')) ?>" required>
-                    </div>
-                    <div class="form-group">
-                        <label><?= e(__('phone')) ?> *</label>
-                        <input type="text" name="customer_phone" value="<?= e($_POST['customer_phone'] ?? '') ?>"
-                            placeholder="05xxxxxxxx" required>
+                    <label><?= e(__('payment_method')) ?> *</label>
+                    <div class="payment-options">
+                        <label class="payment-option">
+                            <input type="radio" name="payment_method" value="cash"
+                                <?= ($_POST['payment_method'] ?? 'cash') !== 'transfer' ? 'checked' : '' ?>>
+                            <span><?= e(__('payment_cash')) ?></span>
+                        </label>
+                        <label class="payment-option">
+                            <input type="radio" name="payment_method" value="transfer"
+                                <?= ($_POST['payment_method'] ?? '') === 'transfer' ? 'checked' : '' ?>>
+                            <span><?= e(__('payment_transfer')) ?></span>
+                        </label>
                     </div>
                 </div>
                 <div class="form-group">
@@ -224,30 +223,71 @@ require __DIR__ . '/../includes/header.php';
                 </div>
             </div>
 
+            <div class="card" style="margin-top:1rem">
+                <div class="card-header" style="display:flex;justify-content:space-between;align-items:center;gap:1rem">
+                    <h2><?= e(__('items')) ?></h2>
+                    <button type="button" class="btn btn-secondary btn-sm" id="addInvoiceItem"><?= e(__('add_item')) ?></button>
+                </div>
+                <div class="card-body table-wrap">
+                    <table id="invoiceItems">
+                        <thead>
+                            <tr>
+                                <th><?= e(__('product_search')) ?></th>
+                                <th><?= e(__('product')) ?></th>
+                                <th><?= e(__('serial_number')) ?></th>
+                                <th><?= e(__('quantity')) ?></th>
+                                <th><?= e(__('list_price')) ?></th>
+                                <th><?= e(__('price_after_discount')) ?></th>
+                                <th><?= e(__('total')) ?></th>
+                                <th><?= e(__('actions')) ?></th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+
             <div class="sale-total-preview" id="saleTotalPreview">
-                <span><?= e(__('total')) ?></span>
-                <strong><?= formatMoney($previewTotals['total']) ?></strong>
-                <small style="display:block;margin-top:0.35rem;color:var(--text-muted)">
-                    <?= e(__('discount')) ?>: <span id="saleDiscountPreview"><?= e(number_format($previewTotals['discount'], 2)) ?></span> <?= e(CURRENCY_CODE) ?>
-                </small>
+                <div><?= e(__('subtotal')) ?>: <strong id="saleSubtotalPreview"><?= formatMoney((float) $previewTotals['subtotal']) ?></strong></div>
+                <div><?= e(__('discount')) ?>: <strong id="saleDiscountPreview"><?= formatMoney((float) $previewTotals['discount']) ?></strong></div>
+                <div style="margin-top:0.35rem"><?= e(__('total')) ?>: <strong id="saleGrandTotalPreview"><?= formatMoney((float) $previewTotals['total']) ?></strong></div>
             </div>
 
             <button type="submit" class="btn btn-primary btn-lg"><?= e(__('save_sale')) ?></button>
         </form>
     </div>
 </div>
+
+<template id="invoiceItemRowTemplate">
+    <tr class="invoice-item-row">
+        <td><input type="search" class="invoice-item-search" placeholder="<?= e(__('product_search_placeholder')) ?>" autocomplete="off"></td>
+        <td><select class="invoice-item-product" required></select></td>
+        <td><input type="text" class="invoice-item-serial" placeholder="<?= e(__('serial_number_placeholder')) ?>" autocomplete="off" required></td>
+        <td><input type="number" class="invoice-item-qty" min="1" value="1" required></td>
+        <td><input type="text" class="invoice-item-list-price" value="0.00" readonly></td>
+        <td><input type="number" class="invoice-item-unit-price" min="0.01" step="0.01" value="0.00" required></td>
+        <td class="invoice-item-line-total">0.00 <?= e(CURRENCY_CODE) ?></td>
+        <td><button type="button" class="btn btn-danger btn-sm invoice-item-remove">×</button></td>
+    </tr>
+</template>
+
 <script>
 (function () {
   const products = <?= json_encode($productSearchData, JSON_UNESCAPED_UNICODE) ?>;
+  const formItems = <?= json_encode(array_values($formItems), JSON_UNESCAPED_UNICODE) ?>;
   const currencyCode = <?= json_encode(CURRENCY_CODE, JSON_UNESCAPED_UNICODE) ?>;
-  const search = document.getElementById('saleProductSearch');
-  const product = document.getElementById('saleProduct');
-  const qty = document.getElementById('saleQty');
-  const defaultPrice = document.getElementById('saleDefaultPrice');
-  const unitPrice = document.getElementById('saleUnitPrice');
-  const preview = document.getElementById('saleTotalPreview');
+  const tbody = document.querySelector('#invoiceItems tbody');
+  const template = document.getElementById('invoiceItemRowTemplate');
+  const addButton = document.getElementById('addInvoiceItem');
+  const subtotalPreview = document.getElementById('saleSubtotalPreview');
   const discountPreview = document.getElementById('saleDiscountPreview');
-  if (!product || !qty || !preview || !unitPrice || !defaultPrice || !search) return;
+  const totalPreview = document.getElementById('saleGrandTotalPreview');
+  const productMap = Object.fromEntries(products.map(function (item) {
+    return [String(item.id), item];
+  }));
+  let nextIndex = 0;
+
+  if (!tbody || !template || !addButton) return;
 
   function escapeHtml(value) {
     return String(value)
@@ -258,62 +298,160 @@ require __DIR__ . '/../includes/header.php';
       .replace(/'/g, '&#39;');
   }
 
-  function renderProducts(query) {
-    const selected = product.value;
+  function formatMoneyValue(amount) {
+    return Number(amount || 0).toLocaleString(undefined, {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    }) + ' ' + currencyCode;
+  }
+
+  function buildOptions(selectedId, query) {
     const term = (query || '').trim().toLowerCase();
-    const matches = term
+    const filtered = term
       ? products.filter(function (item) { return item.search.indexOf(term) !== -1; })
       : products.slice();
+    const source = filtered.length > 0 ? filtered : products;
 
-    product.innerHTML = '<option value="">--</option>' + matches.map(function (item) {
-      const isSelected = String(item.id) === String(selected) ? ' selected' : '';
-      const priceText = Number(item.price || 0).toLocaleString(undefined, {
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2
-      });
-      return '<option value="' + item.id + '" data-price="' + item.price + '"' + isSelected + '>'
-        + escapeHtml(item.label) + ' - ' + priceText + ' ' + currencyCode + '</option>';
+    return '<option value="">--</option>' + source.map(function (item) {
+      const selected = String(item.id) === String(selectedId) ? ' selected' : '';
+      return '<option value="' + item.id + '"' + selected + '>' + escapeHtml(item.label) + '</option>';
     }).join('');
-
-    if (selected && !product.value && matches.length === 1) {
-      product.value = String(matches[0].id);
-    }
   }
 
-  function updatePreview() {
-    const opt = product.selectedOptions[0];
-    const listPrice = parseFloat(opt?.dataset.price || 0);
-    const price = parseFloat(unitPrice.value || 0);
-    const q = parseInt(qty.value || '1', 10);
-    const total = price * q;
-    const discount = Math.max(0, (listPrice * q) - total);
-    defaultPrice.value = listPrice.toFixed(2);
-    preview.querySelector('strong').textContent =
-      total.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' ' + currencyCode;
-    if (discountPreview) {
-      discountPreview.textContent = discount.toLocaleString(undefined, {
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2
-      });
-    }
+  function createRow(data) {
+    const row = template.content.firstElementChild.cloneNode(true);
+    const index = nextIndex++;
+    const searchInput = row.querySelector('.invoice-item-search');
+    const select = row.querySelector('.invoice-item-product');
+    const serialInput = row.querySelector('.invoice-item-serial');
+    const qtyInput = row.querySelector('.invoice-item-qty');
+    const listPriceInput = row.querySelector('.invoice-item-list-price');
+    const unitPriceInput = row.querySelector('.invoice-item-unit-price');
+
+    searchInput.value = '';
+    select.name = 'items[' + index + '][product_id]';
+    serialInput.name = 'items[' + index + '][serial_number]';
+    qtyInput.name = 'items[' + index + '][quantity]';
+    unitPriceInput.name = 'items[' + index + '][unit_price]';
+
+    const selectedId = String(data && data.product_id ? data.product_id : '');
+    select.innerHTML = buildOptions(selectedId, '');
+    select.value = selectedId;
+    serialInput.value = data && data.serial_number ? data.serial_number : '';
+    qtyInput.value = data && data.quantity ? data.quantity : 1;
+
+    const selectedProduct = productMap[selectedId] || null;
+    const defaultPrice = selectedProduct ? Number(selectedProduct.price || 0) : 0;
+    listPriceInput.value = defaultPrice.toFixed(2);
+    unitPriceInput.value = data && data.unit_price ? Number(data.unit_price).toFixed(2) : defaultPrice.toFixed(2);
+
+    bindRow(row);
+    tbody.appendChild(row);
+    updateSummary();
   }
 
-  search.addEventListener('input', function () {
-    renderProducts(search.value);
-    updatePreview();
-  });
-  product.addEventListener('change', function () {
-    const opt = product.selectedOptions[0];
-    if (opt?.dataset.price) {
-      unitPrice.value = parseFloat(opt.dataset.price).toFixed(2);
-    }
-    updatePreview();
-  });
-  qty.addEventListener('input', updatePreview);
-  unitPrice.addEventListener('input', updatePreview);
+  function bindRow(row) {
+    const searchInput = row.querySelector('.invoice-item-search');
+    const select = row.querySelector('.invoice-item-product');
+    const qtyInput = row.querySelector('.invoice-item-qty');
+    const serialInput = row.querySelector('.invoice-item-serial');
+    const listPriceInput = row.querySelector('.invoice-item-list-price');
+    const unitPriceInput = row.querySelector('.invoice-item-unit-price');
+    const removeButton = row.querySelector('.invoice-item-remove');
 
-  renderProducts('');
-  updatePreview();
+    function syncProduct(resetUnitPrice) {
+      const selectedProduct = productMap[select.value] || null;
+      const defaultPrice = selectedProduct ? Number(selectedProduct.price || 0) : 0;
+      listPriceInput.value = defaultPrice.toFixed(2);
+      if (resetUnitPrice || Number(unitPriceInput.value || 0) <= 0) {
+        unitPriceInput.value = defaultPrice.toFixed(2);
+      }
+      updateRowTotal(row);
+      updateSummary();
+    }
+
+    searchInput.addEventListener('input', function () {
+      const currentId = select.value;
+      select.innerHTML = buildOptions(currentId, searchInput.value);
+      if (currentId) {
+        select.value = currentId;
+      }
+      syncProduct(false);
+    });
+
+    select.addEventListener('change', function () {
+      syncProduct(true);
+    });
+
+    qtyInput.addEventListener('input', function () {
+      updateRowTotal(row);
+      updateSummary();
+    });
+
+    unitPriceInput.addEventListener('input', function () {
+      updateRowTotal(row);
+      updateSummary();
+    });
+
+    serialInput.addEventListener('input', function () {
+      updateSummary();
+    });
+
+    removeButton.addEventListener('click', function () {
+      if (tbody.children.length === 1) {
+        return;
+      }
+      row.remove();
+      updateSummary();
+    });
+
+    syncProduct(false);
+  }
+
+  function updateRowTotal(row) {
+    const qty = Number(row.querySelector('.invoice-item-qty').value || 0);
+    const unitPrice = Number(row.querySelector('.invoice-item-unit-price').value || 0);
+    const totalCell = row.querySelector('.invoice-item-line-total');
+    totalCell.textContent = formatMoneyValue(qty * unitPrice);
+  }
+
+  function updateSummary() {
+    let subtotal = 0;
+    let finalTotal = 0;
+
+    tbody.querySelectorAll('.invoice-item-row').forEach(function (row) {
+      const select = row.querySelector('.invoice-item-product');
+      const qty = Number(row.querySelector('.invoice-item-qty').value || 0);
+      const unitPrice = Number(row.querySelector('.invoice-item-unit-price').value || 0);
+      const selectedProduct = productMap[select.value] || null;
+      const defaultPrice = selectedProduct ? Number(selectedProduct.price || 0) : 0;
+
+      subtotal += defaultPrice * qty;
+      finalTotal += unitPrice * qty;
+    });
+
+    const normalizedSubtotal = Math.max(subtotal, finalTotal);
+    const discount = Math.max(0, subtotal - finalTotal);
+    subtotalPreview.textContent = formatMoneyValue(normalizedSubtotal);
+    discountPreview.textContent = formatMoneyValue(discount);
+    totalPreview.textContent = formatMoneyValue(finalTotal);
+  }
+
+  addButton.addEventListener('click', function () {
+    createRow({
+      product_id: '',
+      quantity: 1,
+      serial_number: '',
+      unit_price: 0
+    });
+  });
+
+  (formItems.length ? formItems : [{
+    product_id: <?= json_encode($defaultProductId) ?>,
+    quantity: 1,
+    serial_number: '',
+    unit_price: <?= json_encode($defaultProductPrice) ?>
+  }]).forEach(createRow);
 })();
 </script>
 <?php require __DIR__ . '/../includes/footer.php'; ?>
