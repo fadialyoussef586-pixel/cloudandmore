@@ -158,7 +158,7 @@ require __DIR__ . '/../includes/header.php';
                     <td><?= formatDate($inv['created_at']) ?></td>
                     <td class="table-actions">
                         <a href="<?= url('invoices/view.php?id=' . $inv['id']) ?>" class="btn btn-secondary btn-sm"><?= e(__('view')) ?></a>
-                        <a href="<?= url('invoices/view.php?id=' . $inv['id'] . '&autoprint=1') ?>" class="btn btn-secondary btn-sm" onclick="window.open(this.href, '_blank', 'noopener'); return false;"><?= e(__('print')) ?></a>
+                        <a href="<?= url('invoices/print.php?id=' . $inv['id']) ?>" class="btn btn-secondary btn-sm" target="_blank" rel="noopener"><?= e(__('print')) ?></a>
                         <?php if (($inv['payment_method'] ?? '') === 'deferred' && ($inv['status'] ?? '') !== 'paid' && ($inv['invoice_type'] ?? 'sale') === 'sale'): ?>
                         <a href="<?= url('invoices/index.php?pay=' . $inv['id']) ?>" class="btn btn-success btn-sm"><?= e(__('mark_paid')) ?></a>
                         <?php endif; ?>
