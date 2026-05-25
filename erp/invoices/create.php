@@ -40,13 +40,14 @@ $formItems = $_POST['items'] ?? [[
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $pdo = db();
-    $pdo->beginTransaction();
+    $transactionStarted = false;
 
     try {
         $invoiceType = normalizeInvoiceType($_POST['invoice_type'] ?? 'sale');
         $paymentMethod = normalizePaymentMethod($_POST['payment_method'] ?? 'cash');
         $customerName = trim($_POST['customer_name'] ?? '');
         $customerPhone = trim($_POST['customer_phone'] ?? '');
+        $notes = trim($_POST['notes'] ?? '');
         $rawItems = is_array($_POST['items'] ?? null) ? $_POST['items'] : [];
         $lineItems = [];
         $seenSerials = [];
@@ -111,7 +112,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             throw new RuntimeException('items');
         }
 
-        $customerId = findOrCreateQuickCustomer($customerName, $customerPhone);
         if ($invoiceType === 'gift') {
             $discount = 0.0;
             $totals = invoiceTotalsFromLines(0.0, 0.0);
@@ -122,7 +122,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $totals = invoiceTotalsFromLines(max($listSubtotal, $finalTotal), $discount);
             $invoiceStatus = $paymentMethod === 'deferred' ? 'sent' : 'paid';
         }
+
+        // Prepare treasury tables before the write transaction so schema migrations
+        // never trigger an implicit commit in the middle of invoice creation.
+        ensureTreasuryTables();
+
+        $pdo->beginTransaction();
+        $transactionStarted = true;
+
         $invNum = generateNumber('INV');
+        $customerId = findOrCreateQuickCustomer($customerName, $customerPhone);
 
         $pdo->prepare(
             'INSERT INTO invoices (invoice_number, customer_id, subtotal, tax_rate, tax_amount, discount, total, status, payment_method, invoice_type, notes, user_id)
@@ -138,8 +147,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $invoiceStatus,
             $paymentMethod,
             $invoiceType,
-            trim($_POST['notes'] ?? ''),
-            $_SESSION['user_id'],
+            $notes !== '' ? $notes : null,
+            $_SESSION['user_id'] ?? null,
         ]);
         $invoiceId = dbLastInsertId($pdo);
 
@@ -170,11 +179,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             );
         }
 
+        // Sync dynamic financial totals immediately after the write succeeds.
+        $treasuryBalanceNow = treasuryBalanceFromDb($pdo);
+        $monthlyRevenueNow = monthlyRevenue($pdo);
+
         $pdo->commit();
         flash('success', __('success_saved'));
         redirect(url('invoices/view.php?id=' . $invoiceId));
     } catch (Throwable $e) {
-        $pdo->rollBack();
+        if ($transactionStarted && $pdo->inTransaction()) {
+            $pdo->rollBack();
+        }
         $code = $e->getMessage();
         $errors = [
             'items' => __('invoice_items_required'),
@@ -186,6 +201,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             'customer_name' => __('customer_name_required'),
             'customer_phone' => __('customer_phone_required'),
         ];
+        unset($treasuryBalanceNow, $monthlyRevenueNow);
         flash('error', $errors[$code] ?? __('error'));
     }
 }
