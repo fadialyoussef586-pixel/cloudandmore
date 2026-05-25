@@ -1,0 +1,23 @@
+CREATE TABLE IF NOT EXISTS invoice_returns (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    invoice_id INT NOT NULL,
+    invoice_item_id INT NOT NULL,
+    action ENUM('return', 'exchange') NOT NULL DEFAULT 'return',
+    return_quantity INT NOT NULL DEFAULT 1,
+    original_unit_price DECIMAL(12,2) NOT NULL DEFAULT 0,
+    return_total DECIMAL(12,2) NOT NULL DEFAULT 0,
+    replacement_product_id INT NULL,
+    replacement_serial_number VARCHAR(100) NULL,
+    replacement_unit_price DECIMAL(12,2) NOT NULL DEFAULT 0,
+    replacement_total DECIMAL(12,2) NOT NULL DEFAULT 0,
+    difference_amount DECIMAL(12,2) NOT NULL DEFAULT 0,
+    notes TEXT,
+    user_id INT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (invoice_id) REFERENCES invoices(id) ON DELETE CASCADE,
+    FOREIGN KEY (invoice_item_id) REFERENCES invoice_items(id) ON DELETE CASCADE,
+    FOREIGN KEY (replacement_product_id) REFERENCES products(id) ON DELETE SET NULL,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL,
+    INDEX idx_invoice_returns_invoice (invoice_id),
+    INDEX idx_invoice_returns_item (invoice_item_id)
+);

@@ -5,6 +5,7 @@ require_once __DIR__ . '/../config/database.php';
 function businessDataTables(): array
 {
     return [
+        'invoice_returns',
         'supplier_debt_payments',
         'purchases',
         'suppliers',
@@ -219,6 +220,7 @@ function ensureSchemasBeforeReset(PDO $pdo): void
     $files = [
         __DIR__ . '/../database/migrate_currency_treasury.sql',
         __DIR__ . '/../database/migrate_invoice_simple.sql',
+        __DIR__ . '/../database/migrate_invoice_returns.sql',
         __DIR__ . '/../database/migrate_purchases.sql',
         __DIR__ . '/../database/migrate_shop.sql',
         __DIR__ . '/../database/migrate_permissions.sql',
