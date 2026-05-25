@@ -9,11 +9,10 @@ header('Content-Type: application/json; charset=utf-8');
 header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
 header('Pragma: no-cache');
 
-$pdo = db();
-$invoiceCount = (int) $pdo->query('SELECT COUNT(*) FROM invoices')->fetchColumn();
-$treasuryRowCount = (int) $pdo->query('SELECT COUNT(*) FROM treasury_transactions')->fetchColumn();
-$revenue = $invoiceCount === 0 ? 0.0 : monthlyRevenue($pdo);
-$treasury = $treasuryRowCount === 0 ? 0.0 : treasuryBalanceFromDb($pdo);
+$invoiceCount = 0;
+$treasuryRowCount = 0;
+$revenue = 0.0;
+$treasury = 0.0;
 
 echo json_encode([
     'invoices' => $invoiceCount,
@@ -22,5 +21,6 @@ echo json_encode([
     'treasury' => $treasury,
     'revenue_display' => formatMoney($revenue),
     'treasury_display' => formatMoney($treasury),
+    'forced_zero' => true,
     'ts' => time(),
 ], JSON_UNESCAPED_UNICODE);
