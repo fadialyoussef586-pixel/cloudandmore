@@ -9,8 +9,6 @@ $pdo = db();
 
 $invoiceCount = (int) $pdo->query('SELECT COUNT(*) FROM invoices')->fetchColumn();
 $treasuryRowCount = (int) $pdo->query('SELECT COUNT(*) FROM treasury_transactions')->fetchColumn();
-$monthlyRevenue = $invoiceCount === 0 ? 0.0 : monthlyRevenue($pdo);
-$treasuryBal = $treasuryRowCount === 0 ? 0.0 : treasuryBalanceFromDb($pdo);
 
 $pageTitle = __('dashboard');
 
@@ -21,8 +19,8 @@ $stats = [
     'invoices' => $invoiceCount,
     'deliveries' => (int) $pdo->query("SELECT COUNT(*) FROM deliveries WHERE status IN ('pending','in_transit')")->fetchColumn(),
     'employees' => (int) $pdo->query("SELECT COUNT(*) FROM employees WHERE status = 'active'")->fetchColumn(),
-    'revenue' => $monthlyRevenue,
-    'treasury' => $treasuryBal,
+    'revenue' => 0.0,
+    'treasury' => 0.0,
     'treasury_rows' => $treasuryRowCount,
 ];
 
@@ -75,12 +73,12 @@ require __DIR__ . '/includes/header.php';
     </div>
     <div class="stat-card success">
         <div class="label"><?= e(__('revenue_month')) ?></div>
-        <div class="value" id="dashboard-revenue"><?= formatMoney($invoiceCount === 0 ? 0.0 : $stats['revenue']) ?></div>
+        <div class="value" id="dashboard-revenue"><?= formatMoney(0.0) ?></div>
     </div>
     <?php if (in_array($_SESSION['user_role'] ?? '', ['admin', 'manager'], true)): ?>
     <div class="stat-card primary">
         <div class="label"><?= e(__('treasury_balance')) ?></div>
-        <div class="value" id="dashboard-treasury" style="font-size:1.1rem"><?= formatMoney($treasuryRowCount === 0 ? 0.0 : $stats['treasury']) ?></div>
+        <div class="value" id="dashboard-treasury" style="font-size:1.1rem"><?= formatMoney(0.0) ?></div>
     </div>
     <?php endif; ?>
 </div>
@@ -159,15 +157,24 @@ require __DIR__ . '/includes/header.php';
 
 <script>
 (function () {
+  var zeroMoney = <?= json_encode(formatMoney(0.0), JSON_UNESCAPED_UNICODE) ?>;
   fetch('<?= url('api/dashboard-stats.php') ?>?_=' + Date.now(), { credentials: 'same-origin', cache: 'no-store' })
-    .then(function (r) { return r.json(); })
+    .then(function (r) {
+      if (!r.ok) throw new Error('dashboard-stats request failed');
+      return r.json();
+    })
     .then(function (d) {
       var rev = document.getElementById('dashboard-revenue');
       var tr = document.getElementById('dashboard-treasury');
-      if (rev && d.revenue_display) rev.textContent = d.revenue_display;
-      if (tr && d.treasury_display) tr.textContent = d.treasury_display;
+      if (rev) rev.textContent = d.revenue_display || zeroMoney;
+      if (tr) tr.textContent = d.treasury_display || zeroMoney;
     })
-    .catch(function () {});
+    .catch(function () {
+      var rev = document.getElementById('dashboard-revenue');
+      var tr = document.getElementById('dashboard-treasury');
+      if (rev) rev.textContent = zeroMoney;
+      if (tr) tr.textContent = zeroMoney;
+    });
 })();
 </script>
 
