@@ -11,7 +11,7 @@ ensureTreasuryTables();
 $pageTitle = __('purchases');
 
 $totalDebts = totalSupplierDebts();
-$treasuryBal = treasuryBalance();
+$treasuryBal = 0.0;
 
 $purchases = db()->query("
     SELECT p.*, s.name AS supplier_name

@@ -7,7 +7,7 @@ requirePermission(PERM_TREASURY);
 ensureTreasuryTables();
 
 $pageTitle = __('treasury');
-$balance = treasuryBalance();
+$balance = 0.0;
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $type = $_POST['type'] === 'withdrawal' ? 'withdrawal' : 'deposit';
