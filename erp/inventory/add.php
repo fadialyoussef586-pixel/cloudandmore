@@ -9,12 +9,19 @@ $pageTitle = __('add_product');
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $sku = trim($_POST['sku']);
     $name = trim($_POST['name'] ?? '');
+    $category = trim($_POST['custom_category'] ?? '') !== ''
+        ? trim($_POST['custom_category'])
+        : trim($_POST['category'] ?? '');
+    if ($category === '') {
+        flash('error', __('category_required'));
+        redirect(url('inventory/add.php'));
+    }
     $image = saveProductImage($_FILES['image'] ?? [], $sku);
     $stmt = db()->prepare('INSERT INTO products (sku, name_ar, name_en, description_ar, description_en, category, unit, quantity, min_stock, cost_price, sell_price, image, is_published) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)');
     $stmt->execute([
         $sku, $name, $name,
         '', '',
-        trim($_POST['category'] ?? ''), trim($_POST['unit'] ?? 'piece'),
+        $category, trim($_POST['unit'] ?? 'piece'),
         (int) ($_POST['quantity'] ?? 0), (int) ($_POST['min_stock'] ?? 5),
         (float) ($_POST['cost_price'] ?? 0), (float) ($_POST['sell_price'] ?? 0),
         $image, isset($_POST['is_published']) ? 1 : 0,
@@ -28,22 +35,23 @@ require __DIR__ . '/../includes/header.php';
 <div class="card"><div class="card-body">
 <form method="post" enctype="multipart/form-data">
 <div class="form-grid">
-    <div class="form-group"><label><?= e(__('sku')) ?></label><input name="sku" required></div>
-    <div class="form-group"><label><?= e(__('product_name')) ?></label><input name="name" required></div>
+    <div class="form-group"><label><?= e(__('sku')) ?></label><input name="sku" value="<?= e($_POST['sku'] ?? '') ?>" required></div>
+    <div class="form-group"><label><?= e(__('product_name')) ?></label><input name="name" value="<?= e($_POST['name'] ?? '') ?>" required></div>
     <div class="form-group"><label><?= e(__('category')) ?></label>
-    <select name="category" required>
+    <select name="category">
         <option value="">--</option>
         <?php foreach (productCategories() as $value => $label): ?>
-            <option value="<?= e($value) ?>"><?= e($label) ?></option>
+            <option value="<?= e($value) ?>" <?= ($value === ($_POST['category'] ?? '')) ? 'selected' : '' ?>><?= e($label) ?></option>
         <?php endforeach; ?>
     </select></div>
+    <div class="form-group"><label><?= e(__('custom_category')) ?></label><input name="custom_category" value="<?= e($_POST['custom_category'] ?? '') ?>" placeholder="<?= e(__('custom_category_placeholder')) ?>"></div>
     <div class="form-group"><label><?= e(__('product_image')) ?></label><input type="file" name="image" accept="image/*"></div>
-    <div class="form-group"><label><?= e(__('unit')) ?></label><input name="unit" value="piece"></div>
-    <div class="form-group"><label><?= e(__('quantity')) ?></label><input type="number" name="quantity" value="0" min="0"></div>
-    <div class="form-group"><label><?= e(__('min_stock')) ?></label><input type="number" name="min_stock" value="5" min="0"></div>
-    <div class="form-group"><label><?= e(__('cost_price')) ?></label><input type="number" step="0.01" name="cost_price" value="0"></div>
-    <div class="form-group"><label><?= e(__('sell_price')) ?></label><input type="number" step="0.01" name="sell_price" value="0"></div>
-    <div class="form-group"><label><input type="checkbox" name="is_published" value="1" checked> <?= e(__('published')) ?></label></div>
+    <div class="form-group"><label><?= e(__('unit')) ?></label><input name="unit" value="<?= e($_POST['unit'] ?? 'piece') ?>"></div>
+    <div class="form-group"><label><?= e(__('quantity')) ?></label><input type="number" name="quantity" value="<?= e($_POST['quantity'] ?? '0') ?>" min="0"></div>
+    <div class="form-group"><label><?= e(__('min_stock')) ?></label><input type="number" name="min_stock" value="<?= e($_POST['min_stock'] ?? '5') ?>" min="0"></div>
+    <div class="form-group"><label><?= e(__('cost_price')) ?></label><input type="number" step="0.01" name="cost_price" value="<?= e($_POST['cost_price'] ?? '0') ?>"></div>
+    <div class="form-group"><label><?= e(__('sell_price')) ?></label><input type="number" step="0.01" name="sell_price" value="<?= e($_POST['sell_price'] ?? '0') ?>"></div>
+    <div class="form-group"><label><input type="checkbox" name="is_published" value="1" <?= isset($_POST['is_published']) || $_SERVER['REQUEST_METHOD'] !== 'POST' ? 'checked' : '' ?>> <?= e(__('published')) ?></label></div>
 </div>
 <div class="form-actions">
     <button type="submit" class="btn btn-primary"><?= e(__('save')) ?></button>

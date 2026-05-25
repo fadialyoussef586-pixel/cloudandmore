@@ -83,6 +83,16 @@ require __DIR__ . '/../includes/header.php';
             <?php endforeach; ?>
         </tbody>
         <tfoot>
+            <?php if ((float) ($invoice['discount'] ?? 0) > 0): ?>
+            <tr>
+                <td colspan="5" class="invoice-total-label"><?= e(__('subtotal')) ?></td>
+                <td class="num"><?= formatMoney((float) $invoice['subtotal']) ?></td>
+            </tr>
+            <tr>
+                <td colspan="5" class="invoice-total-label"><?= e(__('discount')) ?></td>
+                <td class="num"><?= formatMoney((float) $invoice['discount']) ?></td>
+            </tr>
+            <?php endif; ?>
             <tr>
                 <td colspan="5" class="invoice-total-label"><?= e(__('total')) ?></td>
                 <td class="num invoice-total-value"><?= formatMoney((float) $invoice['total']) ?></td>
