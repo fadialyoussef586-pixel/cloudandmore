@@ -102,6 +102,7 @@ function monthlyRevenue(PDO $pdo): float
         return (float) $pdo->query(
             "SELECT COALESCE(SUM(total), 0) FROM invoices
              WHERE status = 'paid'
+               AND invoice_type = 'sale'
                AND MONTH(created_at) = MONTH(CURRENT_DATE())
                AND YEAR(created_at) = YEAR(CURRENT_DATE())"
         )->fetchColumn();
@@ -220,6 +221,7 @@ function ensureSchemasBeforeReset(PDO $pdo): void
     $files = [
         __DIR__ . '/../database/migrate_currency_treasury.sql',
         __DIR__ . '/../database/migrate_invoice_simple.sql',
+        __DIR__ . '/../database/migrate_invoice_workflow.sql',
         __DIR__ . '/../database/migrate_invoice_returns.sql',
         __DIR__ . '/../database/migrate_purchases.sql',
         __DIR__ . '/../database/migrate_shop.sql',

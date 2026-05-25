@@ -12,6 +12,10 @@ function ensureInvoiceSchema(): void
     if (is_file($path)) {
         runSqlFile($pdo, $path);
     }
+    $workflowPath = BASE_PATH . '/database/migrate_invoice_workflow.sql';
+    if (is_file($workflowPath)) {
+        runSqlFile($pdo, $workflowPath);
+    }
 
     $done = true;
 }
@@ -60,19 +64,53 @@ function findOrCreateQuickCustomer(string $name, string $phone): int
 
 function normalizePaymentMethod(string $method): string
 {
-    return $method === 'transfer' ? 'transfer' : 'cash';
+    return match ($method) {
+        'transfer' => 'transfer',
+        'deferred' => 'deferred',
+        default => 'cash',
+    };
+}
+
+function normalizeInvoiceType(string $type): string
+{
+    return $type === 'gift' ? 'gift' : 'sale';
 }
 
 function paymentMethodLabel(string $method): string
 {
-    return $method === 'transfer' ? __('payment_transfer') : __('payment_cash');
+    return match ($method) {
+        'transfer' => __('payment_transfer'),
+        'deferred' => __('payment_deferred'),
+        default => __('payment_cash'),
+    };
 }
 
 function paymentMethodBadge(string $method): string
 {
-    $class = $method === 'transfer' ? 'badge-blue' : 'badge-green';
+    $class = match ($method) {
+        'transfer' => 'badge-blue',
+        'deferred' => 'badge-yellow',
+        default => 'badge-green',
+    };
 
     return '<span class="badge ' . $class . '">' . e(paymentMethodLabel($method)) . '</span>';
+}
+
+function invoiceTypeLabel(string $type): string
+{
+    return $type === 'gift' ? __('invoice_type_gift') : __('invoice_type_sale');
+}
+
+function invoiceTypeBadge(string $type): string
+{
+    $class = $type === 'gift' ? 'badge-yellow' : 'badge-green';
+
+    return '<span class="badge ' . $class . '">' . e(invoiceTypeLabel($type)) . '</span>';
+}
+
+function invoiceTitleLabel(string $type): string
+{
+    return $type === 'gift' ? __('gift_invoice') : __('sales_invoice');
 }
 
 function invoiceSerialExists(string $serial, ?int $excludeInvoiceId = null): bool

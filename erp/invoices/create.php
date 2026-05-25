@@ -30,6 +30,7 @@ $defaultProductId = (int) ($products[0]['id'] ?? 0);
 $defaultProductPrice = isset($productsById[$defaultProductId])
     ? (float) $productsById[$defaultProductId]['sell_price']
     : 0.0;
+$selectedInvoiceType = normalizeInvoiceType($_POST['invoice_type'] ?? 'sale');
 $formItems = $_POST['items'] ?? [[
     'product_id' => $defaultProductId,
     'quantity' => 1,
@@ -42,6 +43,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $pdo->beginTransaction();
 
     try {
+        $invoiceType = normalizeInvoiceType($_POST['invoice_type'] ?? 'sale');
         $paymentMethod = normalizePaymentMethod($_POST['payment_method'] ?? 'cash');
         $customerName = trim($_POST['customer_name'] ?? '');
         $customerPhone = trim($_POST['customer_phone'] ?? '');
@@ -90,8 +92,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 throw new RuntimeException('unit_price');
             }
 
-            $lineTotal = round($qty * $unitPrice, 2);
-            $listLineSubtotal = round($qty * $defaultUnitPrice, 2);
+            $storedUnitPrice = $invoiceType === 'gift' ? 0.0 : $unitPrice;
+            $lineTotal = $invoiceType === 'gift' ? 0.0 : round($qty * $storedUnitPrice, 2);
+            $listLineSubtotal = $invoiceType === 'gift' ? 0.0 : round($qty * $defaultUnitPrice, 2);
             $listSubtotal += $listLineSubtotal;
             $finalTotal += $lineTotal;
             $lineItems[] = [
@@ -99,7 +102,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 'description' => productName($product),
                 'serial_number' => $serial,
                 'quantity' => $qty,
-                'unit_price' => $unitPrice,
+                'unit_price' => $storedUnitPrice,
                 'total' => $lineTotal,
             ];
         }
@@ -109,13 +112,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
 
         $customerId = findOrCreateQuickCustomer($customerName, $customerPhone);
-        $discount = max(0.0, round($listSubtotal - $finalTotal, 2));
-        $totals = invoiceTotalsFromLines(max($listSubtotal, $finalTotal), $discount);
+        if ($invoiceType === 'gift') {
+            $discount = 0.0;
+            $totals = invoiceTotalsFromLines(0.0, 0.0);
+            $paymentMethod = 'cash';
+            $invoiceStatus = 'paid';
+        } else {
+            $discount = max(0.0, round($listSubtotal - $finalTotal, 2));
+            $totals = invoiceTotalsFromLines(max($listSubtotal, $finalTotal), $discount);
+            $invoiceStatus = $paymentMethod === 'deferred' ? 'sent' : 'paid';
+        }
         $invNum = generateNumber('INV');
 
         $pdo->prepare(
-            'INSERT INTO invoices (invoice_number, customer_id, subtotal, tax_rate, tax_amount, discount, total, status, payment_method, notes, user_id)
-             VALUES (?,?,?,?,?,?,?,?,?,?,?)'
+            'INSERT INTO invoices (invoice_number, customer_id, subtotal, tax_rate, tax_amount, discount, total, status, payment_method, invoice_type, notes, user_id)
+             VALUES (?,?,?,?,?,?,?,?,?,?,?,?)'
         )->execute([
             $invNum,
             $customerId,
@@ -124,8 +135,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $totals['tax_amount'],
             $totals['discount'],
             $totals['total'],
-            'paid',
+            $invoiceStatus,
             $paymentMethod,
+            $invoiceType,
             trim($_POST['notes'] ?? ''),
             $_SESSION['user_id'],
         ]);
@@ -176,8 +188,10 @@ foreach ($formItems as $row) {
     $qty = max(1, (int) ($row['quantity'] ?? 1));
     $unitPrice = round((float) ($row['unit_price'] ?? 0), 2);
     $defaultUnitPrice = isset($productsById[$productId]) ? (float) $productsById[$productId]['sell_price'] : 0.0;
-    $previewListSubtotal += round($qty * $defaultUnitPrice, 2);
-    $previewFinalTotal += round($qty * $unitPrice, 2);
+    if ($selectedInvoiceType === 'sale') {
+        $previewListSubtotal += round($qty * $defaultUnitPrice, 2);
+        $previewFinalTotal += round($qty * $unitPrice, 2);
+    }
 }
 $previewDiscount = max(0.0, round($previewListSubtotal - $previewFinalTotal, 2));
 $previewTotals = invoiceTotalsFromLines(max($previewListSubtotal, $previewFinalTotal), $previewDiscount);
@@ -188,6 +202,25 @@ require __DIR__ . '/../includes/header.php';
     <div class="card-header"><h2><?= e(__('sale_quick_title')) ?></h2></div>
     <div class="card-body">
         <form method="post" class="sale-form" id="saleForm">
+            <div class="form-group">
+                <label><?= e(__('invoice_type')) ?> *</label>
+                <div class="payment-options">
+                    <label class="payment-option">
+                        <input type="radio" name="invoice_type" value="sale"
+                            <?= $selectedInvoiceType !== 'gift' ? 'checked' : '' ?>>
+                        <span><?= e(__('invoice_type_sale')) ?></span>
+                    </label>
+                    <label class="payment-option">
+                        <input type="radio" name="invoice_type" value="gift"
+                            <?= $selectedInvoiceType === 'gift' ? 'checked' : '' ?>>
+                        <span><?= e(__('invoice_type_gift')) ?></span>
+                    </label>
+                </div>
+                <p class="text-muted" id="giftInvoiceHint" style="<?= $selectedInvoiceType === 'gift' ? '' : 'display:none' ?>;margin-top:0.5rem">
+                    <?= e(__('gift_invoice_hint')) ?>
+                </p>
+            </div>
+
             <div class="form-grid form-grid-2">
                 <div class="form-group">
                     <label><?= e(__('customer')) ?> *</label>
@@ -214,6 +247,11 @@ require __DIR__ . '/../includes/header.php';
                             <input type="radio" name="payment_method" value="transfer"
                                 <?= ($_POST['payment_method'] ?? '') === 'transfer' ? 'checked' : '' ?>>
                             <span><?= e(__('payment_transfer')) ?></span>
+                        </label>
+                        <label class="payment-option">
+                            <input type="radio" name="payment_method" value="deferred"
+                                <?= ($_POST['payment_method'] ?? '') === 'deferred' ? 'checked' : '' ?>>
+                            <span><?= e(__('payment_deferred')) ?></span>
                         </label>
                     </div>
                 </div>
@@ -276,6 +314,8 @@ require __DIR__ . '/../includes/header.php';
   const products = <?= json_encode($productSearchData, JSON_UNESCAPED_UNICODE) ?>;
   const formItems = <?= json_encode(array_values($formItems), JSON_UNESCAPED_UNICODE) ?>;
   const currencyCode = <?= json_encode(CURRENCY_CODE, JSON_UNESCAPED_UNICODE) ?>;
+  const invoiceTypeInputs = document.querySelectorAll('input[name="invoice_type"]');
+  const giftInvoiceHint = document.getElementById('giftInvoiceHint');
   const tbody = document.querySelector('#invoiceItems tbody');
   const template = document.getElementById('invoiceItemRowTemplate');
   const addButton = document.getElementById('addInvoiceItem');
@@ -303,6 +343,11 @@ require __DIR__ . '/../includes/header.php';
       minimumFractionDigits: 2,
       maximumFractionDigits: 2
     }) + ' ' + currencyCode;
+  }
+
+  function currentInvoiceType() {
+    const checked = document.querySelector('input[name="invoice_type"]:checked');
+    return checked ? checked.value : 'sale';
   }
 
   function buildOptions(selectedId, query) {
@@ -412,10 +457,12 @@ require __DIR__ . '/../includes/header.php';
     const qty = Number(row.querySelector('.invoice-item-qty').value || 0);
     const unitPrice = Number(row.querySelector('.invoice-item-unit-price').value || 0);
     const totalCell = row.querySelector('.invoice-item-line-total');
-    totalCell.textContent = formatMoneyValue(qty * unitPrice);
+    const total = currentInvoiceType() === 'gift' ? 0 : (qty * unitPrice);
+    totalCell.textContent = formatMoneyValue(total);
   }
 
   function updateSummary() {
+    const invoiceType = currentInvoiceType();
     let subtotal = 0;
     let finalTotal = 0;
 
@@ -426,8 +473,10 @@ require __DIR__ . '/../includes/header.php';
       const selectedProduct = productMap[select.value] || null;
       const defaultPrice = selectedProduct ? Number(selectedProduct.price || 0) : 0;
 
-      subtotal += defaultPrice * qty;
-      finalTotal += unitPrice * qty;
+      if (invoiceType === 'sale') {
+        subtotal += defaultPrice * qty;
+        finalTotal += unitPrice * qty;
+      }
     });
 
     const normalizedSubtotal = Math.max(subtotal, finalTotal);
@@ -452,6 +501,16 @@ require __DIR__ . '/../includes/header.php';
     serial_number: '',
     unit_price: <?= json_encode($defaultProductPrice) ?>
   }]).forEach(createRow);
+
+  invoiceTypeInputs.forEach(function (input) {
+    input.addEventListener('change', function () {
+      if (giftInvoiceHint) {
+        giftInvoiceHint.style.display = currentInvoiceType() === 'gift' ? '' : 'none';
+      }
+      tbody.querySelectorAll('.invoice-item-row').forEach(updateRowTotal);
+      updateSummary();
+    });
+  });
 })();
 </script>
 <?php require __DIR__ . '/../includes/footer.php'; ?>

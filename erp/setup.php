@@ -16,6 +16,7 @@ try {
     runSqlFile($pdo, __DIR__ . '/database/install.sql');
     runSqlFile($pdo, __DIR__ . '/database/migrate_currency_treasury.sql');
     runSqlFile($pdo, __DIR__ . '/database/migrate_invoice_simple.sql');
+    runSqlFile($pdo, __DIR__ . '/database/migrate_invoice_workflow.sql');
     runSqlFile($pdo, __DIR__ . '/database/migrate_invoice_returns.sql');
     runSqlFile($pdo, __DIR__ . '/database/migrate_purchases.sql');
 

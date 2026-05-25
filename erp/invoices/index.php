@@ -7,6 +7,19 @@ requirePermission(PERM_INVOICES);
 
 ensureInvoiceSchema();
 
+if (isset($_GET['pay'])) {
+    $id = (int) $_GET['pay'];
+    db()->prepare("UPDATE invoices
+                   SET status = 'paid'
+                   WHERE id = ?
+                     AND payment_method = 'deferred'
+                     AND invoice_type = 'sale'
+                     AND status != 'paid'")
+        ->execute([$id]);
+    flash('success', __('mark_paid'));
+    redirect(url('invoices/index.php'));
+}
+
 if (isset($_GET['delete'])) {
     requireDelete();
     $id = (int) $_GET['delete'];
@@ -60,6 +73,7 @@ require __DIR__ . '/../includes/header.php';
             <thead>
                 <tr>
                     <th><?= e(__('invoice_number')) ?></th>
+                    <th><?= e(__('invoice_type')) ?></th>
                     <th><?= e(__('product')) ?></th>
                     <th><?= e(__('serial_number')) ?></th>
                     <th><?= e(__('payment_method')) ?></th>
@@ -81,6 +95,7 @@ require __DIR__ . '/../includes/header.php';
                 ?>
                 <tr>
                     <td><?= e($inv['invoice_number']) ?></td>
+                    <td><?= invoiceTypeBadge($inv['invoice_type'] ?? 'sale') ?></td>
                     <td><?= e($productSummary) ?></td>
                     <td><code class="serial-code"><?= e($itemCount > 1 ? '-' : ($inv['serial_number'] ?? '-')) ?></code></td>
                     <td><?= paymentMethodBadge($inv['payment_method'] ?? 'cash') ?></td>
@@ -88,6 +103,9 @@ require __DIR__ . '/../includes/header.php';
                     <td><?= formatDate($inv['created_at']) ?></td>
                     <td>
                         <a href="<?= url('invoices/view.php?id=' . $inv['id']) ?>" class="btn btn-secondary btn-sm"><?= e(__('view')) ?></a>
+                        <?php if (($inv['payment_method'] ?? '') === 'deferred' && ($inv['status'] ?? '') !== 'paid' && ($inv['invoice_type'] ?? 'sale') === 'sale'): ?>
+                        <a href="<?= url('invoices/index.php?pay=' . $inv['id']) ?>" class="btn btn-success btn-sm"><?= e(__('mark_paid')) ?></a>
+                        <?php endif; ?>
                         <?php if (canDelete()): ?>
                         <a href="<?= url('invoices/index.php?delete=' . $inv['id']) ?>" class="btn btn-danger btn-sm" data-confirm="<?= e(__('confirm_delete')) ?>"><?= e(__('delete')) ?></a>
                         <?php endif; ?>

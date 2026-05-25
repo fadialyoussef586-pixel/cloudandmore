@@ -3,6 +3,7 @@ require_once __DIR__ . '/../includes/functions.php';
 require_once __DIR__ . '/../includes/auth.php';
 requireAuth();
 requirePermission(PERM_REPORTS);
+ensureInvoiceSchema();
 ensureInvoiceReturnsSchema();
 $pageTitle = __('reports');
 
@@ -33,6 +34,7 @@ if ($type === 'sales') {
                            FROM invoices i
                            JOIN customers c ON c.id = i.customer_id
                            WHERE DATE(i.created_at) BETWEEN ? AND ?
+                             AND i.invoice_type = 'sale'
                              AND i.status != 'cancelled'
                            ORDER BY i.created_at DESC");
     $stmt->execute([$from, $to]);
@@ -45,6 +47,7 @@ if ($type === 'sales') {
                                   COALESCE(AVG(total), 0) AS average_total
                            FROM invoices
                            WHERE DATE(created_at) BETWEEN ? AND ?
+                             AND invoice_type = 'sale'
                              AND status != 'cancelled'");
     $stmt->execute([$from, $to]);
     $salesSummary = $stmt->fetch() ?: $salesSummary;
@@ -54,6 +57,7 @@ if ($type === 'sales') {
                                   COALESCE(SUM(total), 0) AS total
                            FROM invoices
                            WHERE DATE(created_at) BETWEEN ? AND ?
+                             AND invoice_type = 'sale'
                              AND status != 'cancelled'
                            GROUP BY payment_method
                            ORDER BY total DESC");
@@ -66,6 +70,7 @@ if ($type === 'sales') {
                            FROM invoice_items ii
                            JOIN invoices i ON i.id = ii.invoice_id
                            WHERE DATE(i.created_at) BETWEEN ? AND ?
+                             AND i.invoice_type = 'sale'
                              AND i.status != 'cancelled'
                            GROUP BY ii.description
                            ORDER BY total_amount DESC, total_qty DESC
@@ -74,10 +79,12 @@ if ($type === 'sales') {
     $topProducts = $stmt->fetchAll();
 
     $stmt = db()->prepare("SELECT COUNT(*) AS entries,
-                                  COALESCE(SUM(return_total), 0) AS return_total,
-                                  COALESCE(SUM(CASE WHEN action = 'exchange' THEN difference_amount ELSE 0 END), 0) AS exchange_diff
-                           FROM invoice_returns
-                           WHERE DATE(created_at) BETWEEN ? AND ?");
+                                  COALESCE(SUM(r.return_total), 0) AS return_total,
+                                  COALESCE(SUM(CASE WHEN r.action = 'exchange' THEN r.difference_amount ELSE 0 END), 0) AS exchange_diff
+                           FROM invoice_returns r
+                           JOIN invoices i ON i.id = r.invoice_id
+                           WHERE DATE(r.created_at) BETWEEN ? AND ?
+                             AND i.invoice_type = 'sale'");
     $stmt->execute([$from, $to]);
     $returnsSummary = $stmt->fetch() ?: $returnsSummary;
 
@@ -89,6 +96,7 @@ if ($type === 'sales') {
          JOIN invoice_items ii ON ii.id = r.invoice_item_id
          LEFT JOIN products rp ON rp.id = r.replacement_product_id
          WHERE DATE(r.created_at) BETWEEN ? AND ?
+           AND i.invoice_type = 'sale'
          ORDER BY r.created_at DESC
          LIMIT 10"
     );

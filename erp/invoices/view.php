@@ -10,6 +10,18 @@ ensureInvoiceReturnsSchema();
 
 $id = (int) ($_GET['id'] ?? 0);
 
+if (isset($_GET['pay'])) {
+    db()->prepare("UPDATE invoices
+                   SET status = 'paid'
+                   WHERE id = ?
+                     AND payment_method = 'deferred'
+                     AND invoice_type = 'sale'
+                     AND status != 'paid'")
+        ->execute([$id]);
+    flash('success', __('mark_paid'));
+    redirect(url('invoices/view.php?id=' . $id));
+}
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['process_return'])) {
     $pdo = db();
     $pdo->beginTransaction();
@@ -61,6 +73,9 @@ require __DIR__ . '/../includes/header.php';
 <div class="page-actions no-print">
     <a href="<?= url('invoices/index.php') ?>" class="btn btn-secondary"><?= e(__('cancel')) ?></a>
     <a href="<?= url('invoices/create.php') ?>" class="btn btn-primary"><?= e(__('new_sale')) ?></a>
+    <?php if (($invoice['payment_method'] ?? '') === 'deferred' && ($invoice['status'] ?? '') !== 'paid' && ($invoice['invoice_type'] ?? 'sale') === 'sale'): ?>
+    <a href="<?= url('invoices/view.php?id=' . $id . '&pay=1') ?>" class="btn btn-success"><?= e(__('mark_paid')) ?></a>
+    <?php endif; ?>
     <?php if (canDelete()): ?>
     <a href="<?= url('invoices/index.php?delete=' . $id) ?>" class="btn btn-danger" data-confirm="<?= e(__('confirm_delete')) ?>"><?= e(__('delete')) ?></a>
     <?php endif; ?>
@@ -74,10 +89,13 @@ require __DIR__ . '/../includes/header.php';
             <p class="invoice-brand-text">cloud&amp;more</p>
         </div>
         <div class="invoice-print-meta">
-            <h1><?= e(__('sales_invoice')) ?></h1>
+            <h1><?= e(invoiceTitleLabel($invoice['invoice_type'] ?? 'sale')) ?></h1>
             <p><strong><?= e(__('invoice_number')) ?>:</strong> <?= e($invoice['invoice_number']) ?></p>
             <p><strong><?= e(__('date')) ?>:</strong> <?= formatDate($invoice['created_at']) ?></p>
+            <p><?= invoiceTypeBadge($invoice['invoice_type'] ?? 'sale') ?></p>
+            <?php if (($invoice['invoice_type'] ?? 'sale') === 'sale'): ?>
             <p><?= paymentMethodBadge($invoice['payment_method'] ?? 'cash') ?></p>
+            <?php endif; ?>
         </div>
     </header>
 
