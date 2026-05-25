@@ -113,6 +113,26 @@ function invoiceTitleLabel(string $type): string
     return $type === 'gift' ? __('gift_invoice') : __('sales_invoice');
 }
 
+function invoiceShouldCreateImmediateTreasuryEntry(string $invoiceType, string $paymentMethod): bool
+{
+    return $invoiceType === 'sale' && $paymentMethod !== 'deferred';
+}
+
+function recordInvoiceTreasuryDeposit(float $amountUsd, string $invoiceNumber, string $customerName, ?int $userId): void
+{
+    if ($amountUsd <= 0) {
+        return;
+    }
+
+    $description = __('sales_invoice') . ' — ' . trim($invoiceNumber);
+    $customerName = trim($customerName);
+    if ($customerName !== '') {
+        $description .= ' / ' . $customerName;
+    }
+
+    recordTreasuryMovement('deposit', $amountUsd, 'sale', $description, $userId);
+}
+
 function invoiceSerialExists(string $serial, ?int $excludeInvoiceId = null): bool
 {
     $serial = trim($serial);

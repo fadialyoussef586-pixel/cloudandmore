@@ -11,13 +11,40 @@ ensureInvoiceReturnsSchema();
 $id = (int) ($_GET['id'] ?? 0);
 
 if (isset($_GET['pay'])) {
-    db()->prepare("UPDATE invoices
-                   SET status = 'paid'
-                   WHERE id = ?
-                     AND payment_method = 'deferred'
-                     AND invoice_type = 'sale'
-                     AND status != 'paid'")
-        ->execute([$id]);
+    $pdo = db();
+    $pdo->beginTransaction();
+    try {
+        $paymentStmt = $pdo->prepare(
+            "SELECT i.*, c.name AS customer_name
+             FROM invoices i
+             LEFT JOIN customers c ON c.id = i.customer_id
+             WHERE i.id = ?
+             FOR UPDATE"
+        );
+        $paymentStmt->execute([$id]);
+        $paymentInvoice = $paymentStmt->fetch();
+
+        if ($paymentInvoice
+            && ($paymentInvoice['payment_method'] ?? '') === 'deferred'
+            && ($paymentInvoice['invoice_type'] ?? 'sale') === 'sale'
+            && ($paymentInvoice['status'] ?? '') !== 'paid'
+        ) {
+            $pdo->prepare("UPDATE invoices SET status = 'paid' WHERE id = ?")->execute([$id]);
+            recordInvoiceTreasuryDeposit(
+                (float) ($paymentInvoice['total'] ?? 0),
+                (string) ($paymentInvoice['invoice_number'] ?? ''),
+                (string) ($paymentInvoice['customer_name'] ?? ''),
+                $_SESSION['user_id'] ?? null
+            );
+        }
+
+        $pdo->commit();
+    } catch (Throwable $e) {
+        $pdo->rollBack();
+        flash('error', __('error'));
+        redirect(url('invoices/view.php?id=' . $id));
+    }
+
     flash('success', __('mark_paid'));
     redirect(url('invoices/view.php?id=' . $id));
 }
@@ -63,9 +90,18 @@ $items = $items->fetchAll();
 $returnHistory = invoiceReturnHistory($id);
 $allProducts = db()->query('SELECT id, sku, name_ar, name_en, sell_price, quantity FROM products ORDER BY name_en')->fetchAll();
 $remainingQtyByItem = [];
+$itemCount = count($items);
+$totalQuantity = 0;
 foreach ($items as $row) {
     $remainingQtyByItem[(int) $row['id']] = invoiceItemRemainingQty($row);
+    $totalQuantity += (int) ($row['quantity'] ?? 0);
 }
+$customerNameDisplay = trim((string) ($invoice['customer_name'] ?? ''));
+if ($customerNameDisplay === '') {
+    $customerNameDisplay = __('walk_in_customer');
+}
+$customerPhone = trim((string) ($invoice['phone'] ?? ''));
+$hasDiscount = (float) ($invoice['discount'] ?? 0) > 0;
 
 $pageTitle = $invoice['invoice_number'];
 require __DIR__ . '/../includes/header.php';
@@ -83,78 +119,145 @@ require __DIR__ . '/../includes/header.php';
 </div>
 
 <article class="invoice-print card">
-    <header class="invoice-print-head">
-        <div class="invoice-print-brand">
+    <section class="invoice-print-hero">
+        <div class="invoice-print-hero__brand">
             <?= companyLogoHtml('company-logo company-logo--invoice') ?>
-            <p class="invoice-brand-text">cloud&amp;more</p>
+            <div>
+                <p class="invoice-brand-text">cloud&amp;more</p>
+                <p class="invoice-brand-subtitle"><?= e(COMPANY_TAGLINE) ?></p>
+            </div>
         </div>
+        <div class="invoice-print-hero__total">
+            <span><?= e(__('total')) ?></span>
+            <strong><?= formatMoney((float) $invoice['total']) ?></strong>
+            <div class="invoice-hero-badges">
+                <?= invoiceTypeBadge($invoice['invoice_type'] ?? 'sale') ?>
+                <?php if (($invoice['invoice_type'] ?? 'sale') === 'sale'): ?>
+                    <?= paymentMethodBadge($invoice['payment_method'] ?? 'cash') ?>
+                <?php endif; ?>
+            </div>
+        </div>
+    </section>
+
+    <header class="invoice-print-head">
         <div class="invoice-print-meta">
             <h1><?= e(invoiceTitleLabel($invoice['invoice_type'] ?? 'sale')) ?></h1>
-            <p><strong><?= e(__('invoice_number')) ?>:</strong> <?= e($invoice['invoice_number']) ?></p>
-            <p><strong><?= e(__('date')) ?>:</strong> <?= formatDate($invoice['created_at']) ?></p>
-            <p><?= invoiceTypeBadge($invoice['invoice_type'] ?? 'sale') ?></p>
-            <?php if (($invoice['invoice_type'] ?? 'sale') === 'sale'): ?>
-            <p><?= paymentMethodBadge($invoice['payment_method'] ?? 'cash') ?></p>
-            <?php endif; ?>
+            <div class="invoice-meta-grid">
+                <div class="invoice-meta-card">
+                    <span><?= e(__('invoice_number')) ?></span>
+                    <strong><?= e($invoice['invoice_number']) ?></strong>
+                </div>
+                <div class="invoice-meta-card">
+                    <span><?= e(__('date')) ?></span>
+                    <strong><?= formatDate($invoice['created_at']) ?></strong>
+                </div>
+                <div class="invoice-meta-card">
+                    <span><?= e(__('payment_method')) ?></span>
+                    <strong><?= e(paymentMethodLabel($invoice['payment_method'] ?? 'cash')) ?></strong>
+                </div>
+            </div>
         </div>
+        <aside class="invoice-customer-card">
+            <span class="invoice-section-label"><?= e(__('customer')) ?></span>
+            <strong class="invoice-customer-name"><?= e($customerNameDisplay) ?></strong>
+            <div class="invoice-customer-detail">
+                <span><?= e(__('phone')) ?></span>
+                <strong>
+                    <?php if ($customerPhone !== ''): ?>
+                        <a href="tel:<?= e($customerPhone) ?>" class="invoice-contact-link"><?= e($customerPhone) ?></a>
+                    <?php else: ?>
+                        <?= e('-') ?>
+                    <?php endif; ?>
+                </strong>
+            </div>
+        </aside>
     </header>
 
-    <?php if (!empty($invoice['customer_name']) && $invoice['customer_name'] !== __('walk_in_customer')): ?>
-    <section class="invoice-print-customer">
-        <strong><?= e(__('customer')) ?>:</strong>
-        <?= e($invoice['customer_name']) ?>
-        <?php if (!empty($invoice['phone'])): ?> · <?= e($invoice['phone']) ?><?php endif; ?>
+    <section class="invoice-summary-grid">
+        <div class="invoice-summary-card">
+            <span><?= e(__('items')) ?></span>
+            <strong><?= $itemCount ?></strong>
+        </div>
+        <div class="invoice-summary-card">
+            <span><?= e(__('quantity')) ?></span>
+            <strong><?= $totalQuantity ?></strong>
+        </div>
+        <div class="invoice-summary-card">
+            <span><?= e(__('subtotal')) ?></span>
+            <strong><?= formatMoney((float) $invoice['subtotal']) ?></strong>
+        </div>
+        <?php if ($hasDiscount): ?>
+        <div class="invoice-summary-card">
+            <span><?= e(__('discount')) ?></span>
+            <strong><?= formatMoney((float) $invoice['discount']) ?></strong>
+        </div>
+        <?php endif; ?>
+    </section>
+
+    <?php if ($customerPhone !== '' || !empty($invoice['notes'])): ?>
+    <section class="invoice-inline-note">
+        <?php if ($customerPhone !== ''): ?>
+            <span><strong><?= e(__('phone')) ?>:</strong> <?= e($customerPhone) ?></span>
+        <?php endif; ?>
+        <?php if (!empty($invoice['notes'])): ?>
+            <span><strong><?= e(__('notes')) ?>:</strong> <?= e($invoice['notes']) ?></span>
+        <?php endif; ?>
     </section>
     <?php endif; ?>
 
-    <table class="invoice-print-table">
-        <thead>
-            <tr>
-                <th>#</th>
-                <th><?= e(__('product')) ?></th>
-                <th><?= e(__('serial_number')) ?></th>
-                <th class="num"><?= e(__('quantity')) ?></th>
-                <th class="num"><?= e(__('price')) ?></th>
-                <th class="num"><?= e(__('total')) ?></th>
-            </tr>
-        </thead>
-        <tbody>
-            <?php foreach ($items as $i => $row): ?>
-            <tr>
-                <td><?= $i + 1 ?></td>
-                <td><?= e($row['description']) ?></td>
-                <td><code class="serial-code"><?= e($row['serial_number'] ?? '-') ?></code></td>
-                <td class="num"><?= (int) $row['quantity'] ?></td>
-                <td class="num"><?= formatMoney((float) $row['unit_price']) ?></td>
-                <td class="num"><?= formatMoney((float) $row['total']) ?></td>
-            </tr>
-            <?php endforeach; ?>
-        </tbody>
-        <tfoot>
-            <?php if ((float) ($invoice['discount'] ?? 0) > 0): ?>
-            <tr>
-                <td colspan="5" class="invoice-total-label"><?= e(__('subtotal')) ?></td>
-                <td class="num"><?= formatMoney((float) $invoice['subtotal']) ?></td>
-            </tr>
-            <tr>
-                <td colspan="5" class="invoice-total-label"><?= e(__('discount')) ?></td>
-                <td class="num"><?= formatMoney((float) $invoice['discount']) ?></td>
-            </tr>
-            <?php endif; ?>
-            <tr>
-                <td colspan="5" class="invoice-total-label"><?= e(__('total')) ?></td>
-                <td class="num invoice-total-value"><?= formatMoney((float) $invoice['total']) ?></td>
-            </tr>
-        </tfoot>
-    </table>
-
-    <?php if (!empty($invoice['notes'])): ?>
-    <p class="invoice-print-notes"><strong><?= e(__('notes')) ?>:</strong> <?= e($invoice['notes']) ?></p>
-    <?php endif; ?>
+    <div class="invoice-print-table-wrap">
+        <table class="invoice-print-table">
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th><?= e(__('product')) ?></th>
+                    <th><?= e(__('serial_number')) ?></th>
+                    <th class="num"><?= e(__('quantity')) ?></th>
+                    <th class="num"><?= e(__('price')) ?></th>
+                    <th class="num"><?= e(__('total')) ?></th>
+                </tr>
+            </thead>
+            <tbody>
+                <?php foreach ($items as $i => $row): ?>
+                <tr>
+                    <td><?= $i + 1 ?></td>
+                    <td><?= e($row['description']) ?></td>
+                    <td><code class="serial-code"><?= e($row['serial_number'] ?? '-') ?></code></td>
+                    <td class="num"><?= (int) $row['quantity'] ?></td>
+                    <td class="num"><?= formatMoney((float) $row['unit_price']) ?></td>
+                    <td class="num"><?= formatMoney((float) $row['total']) ?></td>
+                </tr>
+                <?php endforeach; ?>
+            </tbody>
+            <tfoot>
+                <?php if ($hasDiscount): ?>
+                <tr>
+                    <td colspan="5" class="invoice-total-label"><?= e(__('subtotal')) ?></td>
+                    <td class="num"><?= formatMoney((float) $invoice['subtotal']) ?></td>
+                </tr>
+                <tr>
+                    <td colspan="5" class="invoice-total-label"><?= e(__('discount')) ?></td>
+                    <td class="num"><?= formatMoney((float) $invoice['discount']) ?></td>
+                </tr>
+                <?php endif; ?>
+                <tr>
+                    <td colspan="5" class="invoice-total-label"><?= e(__('total')) ?></td>
+                    <td class="num invoice-total-value"><?= formatMoney((float) $invoice['total']) ?></td>
+                </tr>
+            </tfoot>
+        </table>
+    </div>
 
     <footer class="invoice-print-footer">
-        <p><?= e(__('invoice_thanks')) ?></p>
+        <p class="invoice-footer-title"><?= e(__('invoice_thanks')) ?></p>
+        <p><?= e(COMPANY_NAME) ?></p>
     </footer>
+    <?php if (!empty($invoice['customer_name']) && $invoice['customer_name'] !== __('walk_in_customer')): ?>
+    <div class="invoice-print-signature">
+        <span><?= e(__('customer')) ?></span>
+        <strong><?= e($customerNameDisplay) ?></strong>
+    </div>
+    <?php endif; ?>
 </article>
 
 <section class="card no-print" style="margin-top:1rem">

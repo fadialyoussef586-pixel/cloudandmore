@@ -161,6 +161,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $updateStock->execute([$item['quantity'], $item['product_id']]);
         }
 
+        if (invoiceShouldCreateImmediateTreasuryEntry($invoiceType, $paymentMethod)) {
+            recordInvoiceTreasuryDeposit(
+                (float) $totals['total'],
+                $invNum,
+                $customerName,
+                $_SESSION['user_id'] ?? null
+            );
+        }
+
         $pdo->commit();
         flash('success', __('success_saved'));
         redirect(url('invoices/view.php?id=' . $invoiceId));
