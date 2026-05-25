@@ -6,6 +6,7 @@ header('Expires: 0');
 $currentUser = currentUser();
 $pageTitle = $pageTitle ?? __('dashboard');
 $assetVersion = APP_VERSION . '-' . (@filemtime(BASE_PATH . '/assets/css/app.css') ?: time());
+$scriptVersion = APP_VERSION . '-' . (@filemtime(BASE_PATH . '/assets/js/app.js') ?: time());
 ?>
 <!DOCTYPE html>
 <html lang="<?= lang() ?>" dir="<?= isRtl() ? 'rtl' : 'ltr' ?>">
@@ -18,17 +19,23 @@ $assetVersion = APP_VERSION . '-' . (@filemtime(BASE_PATH . '/assets/css/app.css
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
     <link rel="stylesheet" href="<?= asset('css/app.css') ?>?v=<?= e((string) $assetVersion) ?>">
     <link rel="icon" href="<?= e(companyLogoUrl()) ?>" type="image/png">
 </head>
-<body>
+<body data-script-version="<?= e((string) $scriptVersion) ?>">
 <div class="app">
     <?php require __DIR__ . '/sidebar.php'; ?>
     <div class="main">
         <header class="topbar">
             <div class="topbar-left">
-                <button class="sidebar-toggle" id="sidebarToggle" aria-label="Toggle sidebar">☰</button>
-                <h1><?= e($pageTitle) ?></h1>
+                <button class="sidebar-toggle" id="sidebarToggle" aria-label="<?= e(__('toggle_navigation')) ?>">
+                    <?= faIcon('fa-solid fa-bars-staggered') ?>
+                </button>
+                <div class="topbar-title-wrap">
+                    <span class="topbar-kicker"><?= e(__('navigation')) ?></span>
+                    <h1><?= e($pageTitle) ?></h1>
+                </div>
             </div>
             <div class="topbar-right">
                 <form method="post" action="<?= url('set-lang.php') ?>" class="lang-switch">
