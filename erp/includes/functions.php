@@ -3,6 +3,7 @@
 require_once __DIR__ . '/../config/config.php';
 require_once __DIR__ . '/../config/database.php';
 require_once __DIR__ . '/shop_helpers.php';
+require_once __DIR__ . '/ui_icons.php';
 require_once __DIR__ . '/currency.php';
 require_once __DIR__ . '/data_reset.php';
 require_once __DIR__ . '/invoice_helpers.php';

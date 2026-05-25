@@ -11,7 +11,7 @@ $quickItems = quickActionItems();
             : str_contains($currentPath, '/' . $item['path']);
     ?>
         <a href="<?= e($href) ?>" class="bottom-action-item<?= $isActive ? ' active' : '' ?>"<?= $target ?>>
-            <span class="bottom-action-icon"><?= $item['icon'] ?></span>
+            <span class="bottom-action-icon"><?= appIcon($item['icon']) ?></span>
             <span class="bottom-action-label"><?= e(__($item['label'])) ?></span>
         </a>
     <?php endforeach; ?>

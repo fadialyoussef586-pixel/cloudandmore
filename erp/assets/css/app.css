@@ -127,8 +127,24 @@ a { color: inherit; text-decoration: none; }
 }
 
 .nav-item:hover { background: var(--bg-hover); color: var(--text); }
-.nav-item.active { background: var(--primary); color: #fff; }
-.nav-icon { font-size: 1.1rem; width: 1.5rem; text-align: center; }
+.nav-item.active { background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%); color: #fff; }
+.nav-icon {
+  width: 2rem;
+  height: 2rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0.8rem;
+  background: rgba(15, 23, 42, 0.04);
+  flex-shrink: 0;
+}
+.nav-item:hover .nav-icon { background: rgba(0, 168, 201, 0.12); color: var(--primary); }
+.nav-item.active .nav-icon { background: rgba(255, 255, 255, 0.16); color: #fff; }
+.app-icon {
+  width: 1.15rem;
+  height: 1.15rem;
+  display: block;
+}
 
 .sidebar-footer {
   padding: 0.75rem;
@@ -761,8 +777,18 @@ tr:hover td { background: var(--bg-hover); }
 }
 
 .bottom-action-icon {
-  font-size: 1.4rem;
+  width: 2rem;
+  height: 2rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0.8rem;
+  background: rgba(15, 23, 42, 0.04);
   line-height: 1;
+}
+.bottom-action-item.active .bottom-action-icon,
+.bottom-action-item:hover .bottom-action-icon {
+  background: rgba(0, 168, 201, 0.12);
 }
 
 .bottom-action-label {
