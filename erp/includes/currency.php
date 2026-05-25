@@ -1,13 +1,31 @@
 <?php
 
+function safeCurrencySymbol(): string
+{
+    $symbol = defined('CURRENCY_SYMBOL') ? trim((string) CURRENCY_SYMBOL) : '';
+
+    // Ignore malformed symbols like numeric leftovers from bad env/config values.
+    if ($symbol === '' || preg_match('/[0-9]/', $symbol)) {
+        return '';
+    }
+
+    return $symbol;
+}
+
 function formatMoney(float $amount): string
 {
-    return CURRENCY_SYMBOL . number_format($amount, 2) . ' ' . CURRENCY_CODE;
+    $symbol = safeCurrencySymbol();
+    $value = number_format($amount, 2);
+
+    return ($symbol !== '' ? $symbol : '') . $value . ' ' . CURRENCY_CODE;
 }
 
 function formatMoneyHtml(float $amount): string
 {
-    return '<span class="money-usd">' . e(CURRENCY_SYMBOL . number_format($amount, 2)) . ' <span class="currency-usd">' . CURRENCY_CODE . '</span></span>';
+    $symbol = safeCurrencySymbol();
+    $value = ($symbol !== '' ? $symbol : '') . number_format($amount, 2);
+
+    return '<span class="money-usd">' . e($value) . ' <span class="currency-usd">' . CURRENCY_CODE . '</span></span>';
 }
 
 function treasuryBalance(): float
