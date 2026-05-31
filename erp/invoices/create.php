@@ -186,7 +186,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         $pdo->commit();
         flash('success', __('success_saved'));
-        redirect(url('invoices/view.php?id=' . $invoiceId));
+        redirect(url('invoices/preview.php?id=' . $invoiceId));
     } catch (Throwable $e) {
         if ($transactionStarted && $pdo->inTransaction()) {
             $pdo->rollBack();

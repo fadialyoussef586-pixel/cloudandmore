@@ -6,7 +6,7 @@
   const quickMenu = document.getElementById('quickActionMenu');
   const quickToggle = document.getElementById('quickActionToggle');
   const quickPanel = document.getElementById('quickActionPanel');
-  const desktopQuery = window.matchMedia('(max-width: 1024px)');
+  const desktopQuery = window.matchMedia('(max-width: 820px)');
   const collapsedStorageKey = 'erp-sidebar-collapsed';
 
   if (!sidebar || !toggle) return;
@@ -30,9 +30,18 @@
   }
 
   function closeQuickMenu() {
-    if (!quickMenu || !quickToggle) return;
+    if (!quickMenu || !quickToggle || !quickPanel) return;
     quickMenu.classList.remove('open');
     quickToggle.setAttribute('aria-expanded', 'false');
+    quickPanel.setAttribute('hidden', '');
+  }
+
+  function openQuickMenu() {
+    if (!quickMenu || !quickToggle || !quickPanel) return;
+    quickMenu.classList.add('open');
+    quickToggle.setAttribute('aria-expanded', 'true');
+    quickPanel.removeAttribute('hidden');
+    quickPanel.scrollTop = 0;
   }
 
   function setSubmenuState(group, open) {
@@ -103,10 +112,10 @@
   quickToggle?.addEventListener('click', (event) => {
     event.stopPropagation();
     const willOpen = !quickMenu.classList.contains('open');
-    quickMenu.classList.toggle('open', willOpen);
-    quickToggle.setAttribute('aria-expanded', willOpen ? 'true' : 'false');
-    if (willOpen && quickPanel) {
-      quickPanel.scrollTop = 0;
+    if (willOpen) {
+      openQuickMenu();
+    } else {
+      closeQuickMenu();
     }
   });
 

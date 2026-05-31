@@ -38,6 +38,7 @@ $scriptVersion = APP_VERSION . '-' . (@filemtime(BASE_PATH . '/assets/js/app.js'
                 </div>
             </div>
             <div class="topbar-right">
+                <?php require __DIR__ . '/quick_actions_bar.php'; ?>
                 <form method="post" action="<?= url('set-lang.php') ?>" class="lang-switch">
                     <select name="lang" onchange="this.form.submit()" aria-label="<?= e(__('language')) ?>">
                         <option value="en" <?= lang() === 'en' ? 'selected' : '' ?>>English</option>

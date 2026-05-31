@@ -22,14 +22,13 @@ if (!$purchase) {
 }
 
 $pageTitle = $purchase['purchase_number'];
-$autoPrint = isset($_GET['autoprint']) && $_GET['autoprint'] === '1';
 
 require __DIR__ . '/../includes/header.php';
 ?>
 <div class="page-actions no-print">
     <a href="<?= url('purchases/index.php') ?>" class="btn btn-secondary"><?= e(__('cancel')) ?></a>
     <a href="<?= url('purchases/create.php') ?>" class="btn btn-primary"><?= e(__('new_purchase')) ?></a>
-    <button type="button" onclick="window.print(); return false;" class="btn btn-secondary"><?= e(__('print')) ?></button>
+    <a href="<?= url('purchases/print.php?id=' . $id) ?>" class="btn btn-secondary" target="_blank" rel="noopener"><?= e(__('print')) ?></a>
 </div>
 
 <article class="invoice-print card">
@@ -131,13 +130,5 @@ require __DIR__ . '/../includes/header.php';
         <p><?= e(__('suppliers')) ?></p>
     </footer>
 </article>
-
-<?php if ($autoPrint): ?>
-<script>
-window.addEventListener('load', function () {
-  window.print();
-});
-</script>
-<?php endif; ?>
 
 <?php require __DIR__ . '/../includes/footer.php'; ?>

@@ -149,7 +149,7 @@ require __DIR__ . '/../includes/header.php';
                     }
                 ?>
                 <tr>
-                    <td><?= e($inv['invoice_number']) ?></td>
+                    <td><a href="<?= url('invoices/preview.php?id=' . $inv['id']) ?>"><?= e($inv['invoice_number']) ?></a></td>
                     <td><?= invoiceTypeBadge($inv['invoice_type'] ?? 'sale') ?></td>
                     <td><?= e($productSummary) ?></td>
                     <td><code class="serial-code"><?= e($itemCount > 1 ? '-' : ($inv['serial_number'] ?? '-')) ?></code></td>
@@ -157,7 +157,7 @@ require __DIR__ . '/../includes/header.php';
                     <td><?= formatMoney((float) $inv['total']) ?></td>
                     <td><?= formatDate($inv['created_at']) ?></td>
                     <td class="table-actions">
-                        <a href="<?= url('invoices/view.php?id=' . $inv['id']) ?>" class="btn btn-secondary btn-sm"><?= e(__('view')) ?></a>
+                        <a href="<?= url('invoices/preview.php?id=' . $inv['id']) ?>" class="btn btn-secondary btn-sm"><?= e(__('view')) ?></a>
                         <a href="<?= url('invoices/print.php?id=' . $inv['id']) ?>" class="btn btn-secondary btn-sm" target="_blank" rel="noopener"><?= e(__('print')) ?></a>
                         <?php if (($inv['payment_method'] ?? '') === 'deferred' && ($inv['status'] ?? '') !== 'paid' && ($inv['invoice_type'] ?? 'sale') === 'sale'): ?>
                         <a href="<?= url('invoices/index.php?pay=' . $inv['id']) ?>" class="btn btn-success btn-sm"><?= e(__('mark_paid')) ?></a>

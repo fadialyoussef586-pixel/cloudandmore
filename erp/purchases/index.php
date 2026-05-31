@@ -142,7 +142,7 @@ require __DIR__ . '/../includes/header.php';
                     <td><?= formatDate($p['created_at']) ?></td>
                     <td class="table-actions">
                         <a href="<?= url('purchases/view.php?id=' . $p['id']) ?>" class="btn btn-secondary btn-sm"><?= e(__('view')) ?></a>
-                        <a href="<?= url('purchases/view.php?id=' . $p['id'] . '&autoprint=1') ?>" class="btn btn-secondary btn-sm" onclick="window.open(this.href, '_blank', 'noopener'); return false;"><?= e(__('print')) ?></a>
+                        <a href="<?= url('purchases/print.php?id=' . $p['id']) ?>" class="btn btn-secondary btn-sm" target="_blank" rel="noopener"><?= e(__('print')) ?></a>
                         <?php if (canDelete()): ?>
                             <a href="<?= url('purchases/index.php?delete=' . $p['id']) ?>" class="btn btn-danger btn-sm" data-confirm="<?= e(__('confirm_delete')) ?>"><?= e(__('delete')) ?></a>
                         <?php endif; ?>
