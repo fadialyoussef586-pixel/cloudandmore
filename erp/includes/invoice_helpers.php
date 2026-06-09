@@ -67,7 +67,12 @@ function invoiceAwaitingPayment(array $invoice): bool
 
 function invoiceStatusForNewSale(string $paymentMethod): string
 {
-    return invoicePaymentIsDeferred(['payment_method' => $paymentMethod]) ? 'sent' : 'paid';
+    return 'sent';
+}
+
+function invoiceShouldCreateImmediateTreasuryEntry(string $invoiceType, string $paymentMethod): bool
+{
+    return false;
 }
 
 function markInvoiceAsPaid(int $invoiceId, ?PDO $pdo = null, ?int $userId = null): void
@@ -134,9 +139,8 @@ function paymentMethodLabel(string $method): string
 function paymentMethodBadge(string $method): string
 {
     $class = match ($method) {
-        'transfer' => 'badge-blue',
         'deferred', 'pending' => 'badge-yellow',
-        default => 'badge-green',
+        default => 'badge-blue',
     };
 
     return '<span class="badge ' . $class . '">' . e(paymentMethodLabel($method)) . '</span>';
@@ -174,12 +178,6 @@ function invoiceTypeBadge(string $type): string
 function invoiceTitleLabel(string $type): string
 {
     return $type === 'gift' ? __('gift_invoice') : __('sales_invoice');
-}
-
-function invoiceShouldCreateImmediateTreasuryEntry(string $invoiceType, string $paymentMethod): bool
-{
-    return $invoiceType === 'sale'
-        && !invoicePaymentIsDeferred(['payment_method' => $paymentMethod]);
 }
 
 function recordInvoiceTreasuryDeposit(

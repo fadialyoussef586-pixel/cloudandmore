@@ -63,6 +63,7 @@ return [
     'payment_deferred' => 'دفع آجل',
     'payment_pending' => 'تعليق الدفع',
     'payment_pending_hint' => 'عند تعليق الدفع لا تدخل المبالغ للصندوق حتى تضغط «تم الدفع».',
+    'payment_always_pending_hint' => 'كل فاتورة بيع تبقى بانتظار الدفع — المبلغ لا يدخل الصندوق إلا بعد الضغط على «تم الدفع».',
     'payment_pending_status' => 'بانتظار الدفع',
     'payment_received' => 'مدفوعة',
     'confirm_mark_paid' => 'تأكيد استلام الدفع وإيداع المبلغ في الصندوق؟',

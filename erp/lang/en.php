@@ -64,6 +64,7 @@ return [
     'payment_deferred' => 'Deferred payment',
     'payment_pending' => 'Payment on hold',
     'payment_pending_hint' => 'On hold, cash is not deposited until you click Mark as paid.',
+    'payment_always_pending_hint' => 'Every sale invoice stays awaiting payment — cash enters the treasury only after you click Mark as paid.',
     'payment_pending_status' => 'Awaiting payment',
     'payment_received' => 'Paid',
     'confirm_mark_paid' => 'Confirm payment received and deposit to treasury?',

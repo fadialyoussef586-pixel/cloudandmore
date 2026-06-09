@@ -188,10 +188,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             );
         }
 
-        // Touch the persistent cash account inside the same transaction so
-        // sales are reflected immediately in the main cash box balance.
-        $cashBalanceNow = cashAccountBalance($pdo);
-
         $pdo->commit();
         flash('success', __('success_saved'));
         redirect(url('invoices/preview.php?id=' . $invoiceId));
@@ -211,7 +207,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             'customer_phone' => __('customer_phone_required'),
             'customer_blocked' => __('customer_blocked'),
         ];
-        unset($cashBalanceNow);
         flash('error', $errors[$code] ?? __('error'));
     }
 }
@@ -313,18 +308,8 @@ require __DIR__ . '/../includes/header.php';
                                 <?= $selectedPayment === 'transfer' ? 'checked' : '' ?>>
                             <span><?= e(__('payment_transfer')) ?></span>
                         </label>
-                        <label class="payment-option">
-                            <input type="radio" name="payment_method" value="pending"
-                                <?= $selectedPayment === 'pending' ? 'checked' : '' ?>>
-                            <span><?= e(__('payment_pending')) ?></span>
-                        </label>
-                        <label class="payment-option">
-                            <input type="radio" name="payment_method" value="deferred"
-                                <?= $selectedPayment === 'deferred' ? 'checked' : '' ?>>
-                            <span><?= e(__('payment_deferred')) ?></span>
-                        </label>
                     </div>
-                    <p class="text-muted" style="margin-top:0.5rem;font-size:0.85rem"><?= e(__('payment_pending_hint')) ?></p>
+                    <p class="text-muted" style="margin-top:0.5rem;font-size:0.85rem"><?= e(__('payment_always_pending_hint')) ?></p>
                 </div>
                 <div class="form-group">
                     <label><?= e(__('notes')) ?></label>
