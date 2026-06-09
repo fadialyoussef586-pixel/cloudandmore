@@ -155,6 +155,7 @@ function customerStats(int $customerId, ?PDO $pdo = null): array
             COALESCE(SUM(CASE WHEN status = 'paid' AND invoice_type = 'sale' THEN total ELSE 0 END), 0) AS total_spent,
             COALESCE(SUM(CASE WHEN status = 'sent' AND invoice_type = 'sale' THEN total ELSE 0 END), 0) AS outstanding,
             COALESCE(SUM(CASE WHEN status = 'sent' AND invoice_type = 'sale' THEN 1 ELSE 0 END), 0) AS pending_invoices,
+            COALESCE(SUM(CASE WHEN status = 'paid' AND invoice_type = 'sale' THEN 1 ELSE 0 END), 0) AS paid_invoice_count,
             MIN(created_at) AS first_purchase,
             MAX(created_at) AS last_purchase
          FROM invoices
@@ -187,6 +188,7 @@ function customerStats(int $customerId, ?PDO $pdo = null): array
     $deliveryCount = (int) $delStmt->fetchColumn();
 
     $invoiceCount = (int) ($invoiceRow['invoice_count'] ?? 0);
+    $paidInvoiceCount = (int) ($invoiceRow['paid_invoice_count'] ?? 0);
     $totalSpent = round((float) ($invoiceRow['total_spent'] ?? 0), 2);
 
     return [
@@ -199,7 +201,7 @@ function customerStats(int $customerId, ?PDO $pdo = null): array
         'pending_invoices' => (int) ($invoiceRow['pending_invoices'] ?? 0),
         'first_purchase' => $invoiceRow['first_purchase'] ?? null,
         'last_purchase' => $invoiceRow['last_purchase'] ?? null,
-        'avg_invoice' => $invoiceCount > 0 ? round($totalSpent / $invoiceCount, 2) : 0.0,
+        'avg_invoice' => $paidInvoiceCount > 0 ? round($totalSpent / $paidInvoiceCount, 2) : 0.0,
     ];
 }
 

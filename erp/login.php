@@ -33,10 +33,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <div class="login-page">
     <div class="login-box">
         <div class="login-logo-wrap">
-            <?= companyLogoHtml('company-logo company-logo--login') ?>
+            <?= companyLogoWithTagline('company-logo company-logo--login', false, 'brand-tagline') ?>
         </div>
         <h1 class="login-title"><?= e(__('login')) ?></h1>
-        <p class="subtitle"><?= e(__('company_tagline')) ?></p>
 
         <?php if ($error): ?>
             <div class="login-error"><?= e($error) ?></div>

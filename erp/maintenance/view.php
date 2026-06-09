@@ -20,6 +20,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $pdo = db();
 
     if ($action === 'payment') {
+        if (!can(PERM_TREASURY)) {
+            flash('error', __('error_permission'));
+            redirect(url('maintenance/view.php?id=' . $id));
+        }
         $amount = (float) ($_POST['payment_amount'] ?? 0);
         if ($amount > 0) {
             $pdo->beginTransaction();

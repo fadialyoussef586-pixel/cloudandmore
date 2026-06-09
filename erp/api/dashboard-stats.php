@@ -9,18 +9,21 @@ header('Content-Type: application/json; charset=utf-8');
 header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
 header('Pragma: no-cache');
 
-ensureTreasuryTables();
+$payload = ['ts' => time()];
 
-$invoiceCount = (int) db()->query('SELECT COUNT(*) FROM invoices')->fetchColumn();
-$cashMovementCount = (int) db()->query('SELECT COUNT(*) FROM treasury_transactions')->fetchColumn();
-$cashBalance = cashAccountBalance();
+if (can(PERM_TREASURY) || can(PERM_REPORTS)) {
+    ensureTreasuryTables();
+    $invoiceCount = (int) db()->query('SELECT COUNT(*) FROM invoices')->fetchColumn();
+    $cashMovementCount = (int) db()->query('SELECT COUNT(*) FROM treasury_transactions')->fetchColumn();
+    $cashBalance = cashAccountBalance();
+    $payload += [
+        'invoices' => $invoiceCount,
+        'cash_rows' => $cashMovementCount,
+        'cash_balance' => $cashBalance,
+        'cash_display' => formatMoney($cashBalance),
+        'treasury_rows' => $cashMovementCount,
+        'treasury_display' => formatMoney($cashBalance),
+    ];
+}
 
-echo json_encode([
-    'invoices' => $invoiceCount,
-    'cash_rows' => $cashMovementCount,
-    'cash_balance' => $cashBalance,
-    'cash_display' => formatMoney($cashBalance),
-    'treasury_rows' => $cashMovementCount,
-    'treasury_display' => formatMoney($cashBalance),
-    'ts' => time(),
-], JSON_UNESCAPED_UNICODE);
+echo json_encode($payload, JSON_UNESCAPED_UNICODE);

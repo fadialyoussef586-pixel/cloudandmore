@@ -27,9 +27,9 @@ $products = $stmt->fetchAll();
 require __DIR__ . '/includes/header.php';
 ?>
 <section class="shop-hero">
-  <?= companyLogoHtml('company-logo company-logo--hero') ?>
+  <?= companyLogoWithTagline('company-logo company-logo--hero', false, 'shop-brand-tagline') ?>
   <h1><?= e(__('shop')) ?></h1>
-  <p><?= e(__('shop_tagline')) ?></p>
+  <p><?= e(companyTagline()) ?></p>
 </section>
 
 <form method="get" class="shop-search" action="<?= shopUrl() ?>">

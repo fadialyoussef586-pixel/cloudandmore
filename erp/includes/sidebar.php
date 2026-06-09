@@ -4,7 +4,7 @@ $currentDir = basename(dirname($_SERVER['PHP_SELF'] ?? ''));
 
 $isItemActive = static function (array $item) use ($currentPage, $currentDir): bool {
     if (($item['path'] ?? '') === 'index.php') {
-        return $currentPage === 'index.php' && $currentDir === 'erp';
+        return $currentPage === 'index.php' && ($currentDir === 'erp' || $currentDir === '' || $currentDir === '.');
     }
 
     return isset($item['dir']) && $currentDir === $item['dir'];
@@ -67,10 +67,9 @@ $footerLinks = [
 ?>
 <aside class="sidebar" id="sidebar">
     <div class="sidebar-brand">
-        <?= companyLogoHtml('company-logo company-logo--sidebar', true) ?>
+        <?= companyLogoWithTagline('company-logo company-logo--sidebar', true) ?>
         <div class="sidebar-brand-copy">
             <strong>cloud&amp;more</strong>
-            <small class="brand-tagline"><?= e(__('company_tagline')) ?></small>
         </div>
     </div>
 

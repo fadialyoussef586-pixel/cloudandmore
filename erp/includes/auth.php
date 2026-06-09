@@ -64,20 +64,6 @@ function login(string $email, string $password): bool
         return true;
     }
 
-    if ($normalized === strtolower(OWNER_EMAIL) && $password === 'admin123') {
-        try {
-            ensureUserPermissionsSchema();
-            ensureOwnerAccount(db());
-            $user = fetchUserByEmail(strtolower(OWNER_EMAIL));
-            if ($user && password_verify($password, $user['password'])) {
-                completeLogin($user);
-                return true;
-            }
-        } catch (Throwable) {
-            return false;
-        }
-    }
-
     return false;
 }
 

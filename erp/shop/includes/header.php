@@ -16,7 +16,7 @@ if (!isset($pageTitle)) {
 <body class="shop-body">
 <header class="shop-header">
     <div class="shop-container shop-nav">
-        <a href="<?= shopUrl() ?>" class="shop-logo"><?= companyLogoHtml('company-logo company-logo--shop') ?></a>
+        <a href="<?= shopUrl() ?>" class="shop-logo"><?= companyLogoWithTagline('company-logo company-logo--shop', false, 'shop-brand-tagline') ?></a>
         <nav class="shop-links">
             <a href="<?= shopUrl() ?>"><?= e(__('shop')) ?></a>
             <a href="<?= shopUrl('maintenance.php') ?>"><?= e(__('maintenance')) ?></a>

@@ -26,7 +26,12 @@ if ($filter === 'outstanding') {
         WHERE i.customer_id = c.id AND i.status = 'sent' AND i.invoice_type = 'sale' AND i.total > 0
     )";
 } elseif ($filter === 'vip') {
-    $sql .= ' AND c.rating_avg >= 4 AND c.rating_count > 0';
+    $sql .= " AND EXISTS (
+        SELECT 1 FROM invoices i
+        WHERE i.customer_id = c.id AND i.status = 'paid' AND i.invoice_type = 'sale'
+        GROUP BY i.customer_id
+        HAVING COALESCE(SUM(i.total), 0) >= 3000
+    )";
 } elseif ($filter === 'blocked') {
     $sql .= ' AND c.is_blocked = 1';
 }

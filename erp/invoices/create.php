@@ -164,8 +164,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             'INSERT INTO invoice_items (invoice_id, product_id, description, serial_number, quantity, unit_price, total)
              VALUES (?,?,?,?,?,?,?)'
         );
-        $updateStock = $pdo->prepare('UPDATE products SET quantity = GREATEST(0, quantity - ?) WHERE id = ?');
+        $stockCheck = $pdo->prepare('SELECT quantity FROM products WHERE id = ? FOR UPDATE');
+        $updateStock = $pdo->prepare('UPDATE products SET quantity = quantity - ? WHERE id = ? AND quantity >= ?');
         foreach ($lineItems as $item) {
+            if ($invoiceType !== 'gift') {
+                $stockCheck->execute([(int) $item['product_id']]);
+                $available = (int) $stockCheck->fetchColumn();
+                if ($available < (int) $item['quantity']) {
+                    throw new RuntimeException('insufficient_stock');
+                }
+            }
+
             $insertItem->execute([
                 $invoiceId,
                 $item['product_id'],
@@ -175,7 +184,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $item['unit_price'],
                 $item['total'],
             ]);
-            $updateStock->execute([$item['quantity'], $item['product_id']]);
+
+            if ($invoiceType !== 'gift') {
+                $updateStock->execute([(int) $item['quantity'], (int) $item['product_id'], (int) $item['quantity']]);
+                if ($updateStock->rowCount() !== 1) {
+                    throw new RuntimeException('insufficient_stock');
+                }
+            }
         }
 
         if (invoiceShouldCreateImmediateTreasuryEntry($invoiceType, $paymentMethod)) {
@@ -206,6 +221,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             'customer_name' => __('customer_name_required'),
             'customer_phone' => __('customer_phone_required'),
             'customer_blocked' => __('customer_blocked'),
+            'insufficient_stock' => __('insufficient_stock'),
         ];
         flash('error', $errors[$code] ?? __('error'));
     }

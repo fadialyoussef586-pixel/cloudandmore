@@ -606,7 +606,7 @@ $hasDiscount = (float) ($invoice['discount'] ?? 0) > 0;
                     <img src="<?= e(companyLogoUrl()) ?>" alt="<?= e(COMPANY_NAME) ?>" class="print-logo">
                     <div>
                         <h1><?= e(COMPANY_NAME) ?></h1>
-                        <p>Cloud &amp; More · <?= e(COMPANY_TAGLINE) ?></p>
+                        <p><?= e(companyTagline()) ?></p>
                     </div>
                 </div>
                 <div class="print-total">

@@ -148,6 +148,11 @@ function recordMaintenancePayment(int $ticketId, float $amount, ?int $userId, ?P
 
     $newPaid = round((float) ($ticket['amount_paid'] ?? 0) + $amount, 2);
     $repairCost = round((float) ($ticket['repair_cost'] ?? 0), 2);
+    $remaining = round(max(0.0, $repairCost - (float) ($ticket['amount_paid'] ?? 0)), 2);
+    if ($repairCost > 0 && $amount > $remaining) {
+        throw new RuntimeException('payment_exceeds_due');
+    }
+
     $paymentStatus = 'partial';
     if ($repairCost <= 0 || $newPaid >= $repairCost) {
         $paymentStatus = $repairCost > 0 ? 'paid' : 'unpaid';

@@ -8,18 +8,26 @@ $pageTitle = __('sales_orders');
 
 if (isset($_GET['confirm'])) {
     $id = (int)$_GET['confirm'];
-    db()->prepare("UPDATE orders SET status='confirmed', sales_user_id=?, confirmed_at=NOW() WHERE id=? AND status='new'")
-        ->execute([$_SESSION['user_id'], $id]);
-    deductOrderStock($id);
-    flash('success', __('success_saved'));
+    $stmt = db()->prepare("UPDATE orders SET status='confirmed', sales_user_id=?, confirmed_at=NOW() WHERE id=? AND status='new'");
+    $stmt->execute([$_SESSION['user_id'], $id]);
+    if ($stmt->rowCount() === 1) {
+        deductOrderStock($id);
+        flash('success', __('success_saved'));
+    } else {
+        flash('error', __('error'));
+    }
     redirect(url('orders/sales.php'));
 }
 if (isset($_GET['send_delivery'])) {
     $id = (int)$_GET['send_delivery'];
-    db()->prepare("UPDATE orders SET status='ready_for_delivery', handed_at=NOW() WHERE id=? AND status='confirmed'")
-        ->execute([$id]);
-    createDeliveryFromOrder($id, (int)$_SESSION['user_id']);
-    flash('success', __('success_saved'));
+    $stmt = db()->prepare("UPDATE orders SET status='ready_for_delivery', handed_at=NOW() WHERE id=? AND status='confirmed'");
+    $stmt->execute([$id]);
+    if ($stmt->rowCount() === 1) {
+        createDeliveryFromOrder($id, (int)$_SESSION['user_id']);
+        flash('success', __('success_saved'));
+    } else {
+        flash('error', __('error'));
+    }
     redirect(url('orders/sales.php'));
 }
 

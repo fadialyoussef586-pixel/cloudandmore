@@ -295,7 +295,7 @@ function invoiceProfessionalFooterLines(string $invoiceNumber = ''): array
 
     return [
         'title' => 'Official Sales Receipt',
-        'tagline' => 'Cloud and More — Devices, Accessories & Services',
+        'tagline' => companyTagline(),
         'notice' => 'This document is valid proof of purchase. Please retain it for warranty claims and after-sales support.',
         'support' => $supportLine,
     ];

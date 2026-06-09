@@ -2,7 +2,7 @@
 
 return [
     'app_name' => 'Cloud and More ERP',
-    'company_tagline' => 'أجهزة · إكسسوارات · Cloud and More',
+    'company_tagline' => 'Everything is simple',
     'dashboard' => 'لوحة التحكم',
     'inventory' => 'المخزون',
     'invoices' => 'الفواتير',
@@ -16,6 +16,8 @@ return [
     'welcome' => 'مرحباً',
     'total_products' => 'إجمالي المنتجات',
     'low_stock' => 'مخزون منخفض',
+    'insufficient_stock' => 'الكمية غير كافية في المخزون',
+    'payment_exceeds_due' => 'المبلغ أكبر من المتبقي',
     'total_invoices' => 'الفواتير',
     'pending_deliveries' => 'توصيلات معلقة',
     'total_employees' => 'الموظفين',

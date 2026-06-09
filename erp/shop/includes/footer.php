@@ -3,7 +3,7 @@
     <div class="shop-container shop-footer-inner">
         <div>
             <strong><?= e(COMPANY_NAME) ?></strong>
-            <p><?= e(__('company_tagline')) ?></p>
+            <p><?= e(companyTagline()) ?></p>
         </div>
         <div class="shop-footer-links">
             <a href="<?= shopUrl() ?>"><?= e(__('shop')) ?></a>

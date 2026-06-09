@@ -44,7 +44,7 @@ require __DIR__ . '/includes/header.php';
 ?>
 
 <p class="text-muted" style="margin-bottom:0.5rem"><?= e(__('welcome')) ?>, <?= e($_SESSION['user_name'] ?? '') ?>!</p>
-<p class="text-muted" style="margin-bottom:1.5rem;font-size:0.875rem"><?= e(__('company_tagline')) ?></p>
+<p class="text-muted" style="margin-bottom:1.5rem;font-size:0.875rem"><?= e(companyTagline()) ?></p>
 
 <div class="stats-grid">
     <div class="stat-card primary">
@@ -71,10 +71,12 @@ require __DIR__ . '/includes/header.php';
         <div class="label"><?= e(__('total_employees')) ?></div>
         <div class="value"><?= $stats['employees'] ?></div>
     </div>
+    <?php if (can(PERM_TREASURY)): ?>
     <div class="stat-card primary">
         <div class="label"><?= e(__('treasury_balance')) ?></div>
         <div class="value" id="dashboard-cash" style="font-size:1.1rem"><?= formatMoney($stats['cash']) ?></div>
     </div>
+    <?php endif; ?>
 </div>
 
 
@@ -150,6 +152,7 @@ require __DIR__ . '/includes/header.php';
 </div>
 
 <script>
+<?php if (can(PERM_TREASURY)): ?>
 (function () {
   var fallbackMoney = <?= json_encode(formatMoney($stats['cash']), JSON_UNESCAPED_UNICODE) ?>;
   fetch('<?= url('api/dashboard-stats.php') ?>?_=' + Date.now(), { credentials: 'same-origin', cache: 'no-store' })
@@ -166,6 +169,7 @@ require __DIR__ . '/includes/header.php';
       if (cash) cash.textContent = fallbackMoney;
     });
 })();
+<?php endif; ?>
 </script>
 
 <?php require __DIR__ . '/includes/footer.php'; ?>

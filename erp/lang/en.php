@@ -2,7 +2,7 @@
 
 return [
     'app_name' => 'Cloud and More ERP',
-    'company_tagline' => 'Devices · Accessories · Cloud and More',
+    'company_tagline' => 'Everything is simple',
     'dashboard' => 'Dashboard',
     'inventory' => 'Inventory',
     'invoices' => 'Invoices',
@@ -16,6 +16,8 @@ return [
     'welcome' => 'Welcome',
     'total_products' => 'Total Products',
     'low_stock' => 'Low Stock Items',
+    'insufficient_stock' => 'Insufficient stock for this sale',
+    'payment_exceeds_due' => 'Payment exceeds amount due',
     'total_invoices' => 'Invoices',
     'pending_deliveries' => 'Pending Deliveries',
     'total_employees' => 'Employees',

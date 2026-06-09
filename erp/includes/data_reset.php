@@ -132,11 +132,11 @@ function financialTotals(PDO $pdo): array
 
 function ownerAccountPayload(): array
 {
+    require_once __DIR__ . '/permissions.php';
+
     return [
         'hash' => password_hash('admin123', PASSWORD_DEFAULT),
-        'permissions' => json_encode([
-            'orders', 'inventory', 'purchases', 'invoices', 'hr', 'delivery', 'treasury', 'reports',
-        ]),
+        'permissions' => json_encode(allPermissionKeys()),
     ];
 }
 
@@ -184,8 +184,8 @@ function ensureOwnerAccount(PDO $pdo): void
         $ownerId = (int) $pdo->lastInsertId();
     } else {
         $ownerId = (int) $owner['id'];
-        $pdo->prepare('UPDATE users SET name = ?, password = ?, role = ?, permissions = ? WHERE id = ?')
-            ->execute(['Administrator', $payload['hash'], 'admin', $payload['permissions'], $ownerId]);
+        $pdo->prepare('UPDATE users SET name = ?, role = ?, permissions = ? WHERE id = ?')
+            ->execute(['Administrator', 'admin', $payload['permissions'], $ownerId]);
     }
 
     $pdo->prepare('DELETE FROM users WHERE id <> ?')->execute([$ownerId]);

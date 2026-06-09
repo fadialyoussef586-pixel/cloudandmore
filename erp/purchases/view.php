@@ -37,7 +37,7 @@ require __DIR__ . '/../includes/header.php';
             <?= companyLogoHtml('company-logo company-logo--invoice') ?>
             <div>
                 <p class="invoice-brand-text">cloud&amp;more</p>
-                <p class="invoice-brand-subtitle"><?= e(COMPANY_TAGLINE) ?></p>
+                <p class="invoice-brand-subtitle"><?= e(companyTagline()) ?></p>
             </div>
         </div>
         <div class="invoice-print-hero__total">

@@ -263,6 +263,25 @@ function companyLogoUrl(): string
     return asset('img/logo.svg');
 }
 
+function companyTagline(): string
+{
+    return defined('COMPANY_TAGLINE') && COMPANY_TAGLINE !== ''
+        ? COMPANY_TAGLINE
+        : __('company_tagline');
+}
+
+function companyLogoWithTagline(string $logoClass = 'company-logo', bool $linkToHome = false, string $taglineClass = 'brand-tagline'): string
+{
+    $logo = companyLogoHtml($logoClass, $linkToHome);
+    $tagline = '<small class="' . e($taglineClass) . '">' . e(companyTagline()) . '</small>';
+
+    if ($linkToHome) {
+        return '<div class="brand-lockup">' . $logo . $tagline . '</div>';
+    }
+
+    return '<div class="brand-lockup">' . $logo . $tagline . '</div>';
+}
+
 function companyLogoHtml(string $class = 'company-logo', bool $linkToHome = false): string
 {
     $img = '<img src="' . e(companyLogoUrl()) . '" alt="' . e(COMPANY_NAME) . '" class="' . e($class) . '">';

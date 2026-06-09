@@ -3,6 +3,8 @@
 header('Content-Type: text/html; charset=utf-8');
 header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
 require_once __DIR__ . '/includes/functions.php';
+require_once __DIR__ . '/includes/auth.php';
+requireOwner();
 require_once __DIR__ . '/includes/data_reset.php';
 
 $checks = [];
@@ -44,29 +46,9 @@ try {
 }
 
 $checks[] = [
-    'label' => 'MySQL',
+    'label' => 'Database',
     'ok' => $dbOk,
     'detail' => $dbDetail,
-];
-
-$financialDetail = 'N/A';
-try {
-    $pdo = db();
-    $fin = financialTotals($pdo);
-    $financialDetail = sprintf(
-        'Invoices: %d | Cash rows: %d | Cash balance: %s',
-        $fin['invoices'],
-        $fin['treasury_rows'],
-        number_format($fin['treasury'], 2) . ' USD'
-    );
-} catch (Throwable $e) {
-    $financialDetail = $e->getMessage();
-}
-
-$checks[] = [
-    'label' => 'Financial data (live DB)',
-    'ok' => isset($fin) && $fin['treasury'] >= 0.0,
-    'detail' => $financialDetail,
 ];
 
 $loginUrl = url('login.php');

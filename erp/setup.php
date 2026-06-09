@@ -56,8 +56,7 @@ try {
     require_once __DIR__ . '/includes/pwa_helpers.php';
     ensureAppIcons();
 
-    $wantReset = ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['confirm'] ?? '') === 'RESET')
-        || (isset($_GET['reset']) && $_GET['reset'] === 'RESET');
+    $wantReset = $_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['confirm'] ?? '') === 'RESET';
 
     if ($wantReset) {
         $ok = resetBusinessDataVerified($pdo);
@@ -93,7 +92,7 @@ require_once __DIR__ . '/includes/functions.php';
 <body>
 <div class="login-page">
     <div class="login-box" style="max-width:420px">
-        <div class="login-logo-wrap"><?= companyLogoHtml('company-logo company-logo--login') ?></div>
+        <div class="login-logo-wrap"><?= companyLogoWithTagline('company-logo company-logo--login', false, 'brand-tagline') ?></div>
         <h1 class="login-title">إعداد النظام / Setup</h1>
 
         <?php if ($installed): ?>

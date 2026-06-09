@@ -79,6 +79,13 @@ function processInvoiceReturnOrExchange(PDO $pdo, int $invoiceId, array $input, 
 {
     ensureInvoiceReturnsSchema();
 
+    $invoiceStmt = $pdo->prepare('SELECT * FROM invoices WHERE id = ?');
+    $invoiceStmt->execute([$invoiceId]);
+    $invoice = $invoiceStmt->fetch(PDO::FETCH_ASSOC);
+    if (!$invoice) {
+        throw new RuntimeException('return_item_required');
+    }
+
     $itemId = (int) ($input['invoice_item_id'] ?? 0);
     $action = ($input['return_action'] ?? 'return') === 'exchange' ? 'exchange' : 'return';
     $quantity = max(1, (int) ($input['return_quantity'] ?? 1));
@@ -180,4 +187,39 @@ function processInvoiceReturnOrExchange(PDO $pdo, int $invoiceId, array $input, 
         $notes !== '' ? $notes : null,
         $userId,
     ]);
+
+    if (($invoice['status'] ?? '') === 'paid' && ($invoice['invoice_type'] ?? 'sale') === 'sale') {
+        ensureTreasuryTables();
+        $ref = (string) ($invoice['invoice_number'] ?? '');
+        if ($action === 'return' && $returnTotal > 0) {
+            recordTreasuryMovement(
+                'withdrawal',
+                $returnTotal,
+                'return',
+                __('returns_and_exchanges') . ' — ' . $ref,
+                $userId,
+                $pdo
+            );
+        } elseif ($action === 'exchange') {
+            if ($differenceAmount > 0) {
+                recordTreasuryMovement(
+                    'deposit',
+                    $differenceAmount,
+                    'exchange',
+                    __('returns_and_exchanges') . ' — ' . $ref,
+                    $userId,
+                    $pdo
+                );
+            } elseif ($differenceAmount < 0) {
+                recordTreasuryMovement(
+                    'withdrawal',
+                    abs($differenceAmount),
+                    'exchange',
+                    __('returns_and_exchanges') . ' — ' . $ref,
+                    $userId,
+                    $pdo
+                );
+            }
+        }
+    }
 }

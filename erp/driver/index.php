@@ -15,10 +15,15 @@ if (isset($_GET['accept'])) {
 }
 if (isset($_GET['complete'])) {
     $id = (int)$_GET['complete'];
-    db()->prepare("UPDATE orders SET status='delivered', delivered_at=NOW() WHERE id=? AND status='out_for_delivery'")
-        ->execute([$id]);
-    db()->prepare("UPDATE deliveries SET status='delivered', delivered_at=NOW() WHERE order_id=?")->execute([$id]);
-    flash('success', __('success_saved'));
+    $userId = (int) ($_SESSION['user_id'] ?? 0);
+    $stmt = db()->prepare("UPDATE orders SET status='delivered', delivered_at=NOW() WHERE id=? AND status='out_for_delivery' AND delivery_user_id=?");
+    $stmt->execute([$id, $userId]);
+    if ($stmt->rowCount() === 1) {
+        db()->prepare("UPDATE deliveries SET status='delivered', delivered_at=NOW() WHERE order_id=?")->execute([$id]);
+        flash('success', __('success_saved'));
+    } else {
+        flash('error', __('error'));
+    }
     redirect(url('driver/index.php'));
 }
 
@@ -40,7 +45,7 @@ $pageTitle = __('driver_portal');
 <body class="driver-layout">
 <header class="driver-header">
   <div class="driver-header-brand">
-    <?= companyLogoHtml('company-logo company-logo--driver') ?>
+    <?= companyLogoWithTagline('company-logo company-logo--driver', false, 'brand-tagline') ?>
     <div>
       <strong><?= e(__('driver_portal')) ?></strong><br>
       <small class="text-muted"><?= e($_SESSION['user_name'] ?? '') ?></small>
