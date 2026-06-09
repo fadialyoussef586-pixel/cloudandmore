@@ -53,6 +53,16 @@
     group.classList.toggle('open', open);
     button.setAttribute('aria-expanded', open ? 'true' : 'false');
     panel.style.maxHeight = open ? panel.scrollHeight + 'px' : '0px';
+
+    if (open) {
+      const nav = sidebar.querySelector('.sidebar-nav');
+      window.requestAnimationFrame(() => {
+        panel.style.maxHeight = panel.scrollHeight + 'px';
+        if (nav && typeof button.scrollIntoView === 'function') {
+          button.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+        }
+      });
+    }
   }
 
   function collapseOtherGroups(currentGroup) {

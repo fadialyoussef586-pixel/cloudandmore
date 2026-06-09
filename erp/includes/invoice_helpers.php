@@ -139,6 +139,42 @@ function recordInvoiceTreasuryDeposit(
     recordTreasuryMovement('deposit', $amountUsd, 'sale', $description, $userId, $pdo);
 }
 
+function reverseInvoiceTreasuryOnDelete(array $invoice, ?int $userId, ?PDO $pdo = null): void
+{
+    if (($invoice['invoice_type'] ?? 'sale') !== 'sale') {
+        return;
+    }
+    if (($invoice['status'] ?? '') !== 'paid') {
+        return;
+    }
+
+    $total = round((float) ($invoice['total'] ?? 0), 2);
+    if ($total <= 0) {
+        return;
+    }
+
+    $pdo = $pdo ?: db();
+    $balance = cashAccountBalance($pdo);
+    $invoiceNumber = (string) ($invoice['invoice_number'] ?? '');
+    $description = __('delete') . ' — ' . $invoiceNumber;
+
+    if ($balance >= $total) {
+        recordTreasuryMovement('withdrawal', $total, 'sale_reversal', $description, $userId, $pdo);
+        return;
+    }
+
+    if ($balance > 0) {
+        recordTreasuryMovement(
+            'withdrawal',
+            $balance,
+            'sale_reversal',
+            $description . ' (' . __('partial_reversal') . ')',
+            $userId,
+            $pdo
+        );
+    }
+}
+
 function invoiceSerialExists(string $serial, ?int $excludeInvoiceId = null): bool
 {
     $serial = trim($serial);

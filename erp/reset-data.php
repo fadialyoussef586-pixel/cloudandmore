@@ -39,6 +39,8 @@ require __DIR__ . '/includes/header.php';
         </ul>
         <p><strong><?= e(__('reset_data_keeps')) ?>:</strong> <?= e(ownerEmail()) ?></p>
 
+        <p class="text-muted" style="margin-top:1rem;font-size:0.85rem"><?= e(__('owner_delete_only')) ?></p>
+
         <form method="post" style="margin-top:1.5rem" onsubmit="return confirm('<?= e(__('reset_data_confirm_js')) ?>')">
             <div class="form-group">
                 <label><?= e(__('reset_data_type_reset')) ?></label>

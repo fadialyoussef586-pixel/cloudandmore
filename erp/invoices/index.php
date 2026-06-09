@@ -77,14 +77,7 @@ if (isset($_GET['delete'])) {
         }
 
         if (($invoice['invoice_type'] ?? 'sale') === 'sale' && ($invoice['status'] ?? '') === 'paid' && (float) ($invoice['total'] ?? 0) > 0) {
-            recordTreasuryMovement(
-                'withdrawal',
-                (float) $invoice['total'],
-                'sale_reversal',
-                __('delete') . ' — ' . (string) ($invoice['invoice_number'] ?? ''),
-                $_SESSION['user_id'] ?? null,
-                $pdo
-            );
+            reverseInvoiceTreasuryOnDelete($invoice, $_SESSION['user_id'] ?? null, $pdo);
         }
 
         $pdo->prepare('DELETE FROM invoices WHERE id = ?')->execute([$id]);
@@ -94,7 +87,7 @@ if (isset($_GET['delete'])) {
         if ($pdo->inTransaction()) {
             $pdo->rollBack();
         }
-        flash('error', __('error'));
+        flash('error', $e->getMessage() === 'not_found' ? __('error') : __('error'));
     }
     redirect(url('invoices/index.php'));
 }

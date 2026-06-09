@@ -66,7 +66,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     if ($action === 'delete_user') {
-        requireDelete();
+        requireOwner();
         $id = (int) ($_POST['user_id'] ?? 0);
         $stmt = db()->prepare('SELECT * FROM users WHERE id = ?');
         $stmt->execute([$id]);
@@ -171,7 +171,7 @@ require __DIR__ . '/_tabs.php';
                 </div>
                 <button type="submit" class="btn btn-primary btn-sm"><?= e(__('save')) ?></button>
             </form>
-            <?php if (canDelete()): ?>
+            <?php if (isOwner()): ?>
             <form method="post" style="display:inline;margin-top:0.5rem" onsubmit="return confirm('<?= e(__('confirm_delete')) ?>')">
                 <input type="hidden" name="action" value="delete_user">
                 <input type="hidden" name="user_id" value="<?= (int) $u['id'] ?>">

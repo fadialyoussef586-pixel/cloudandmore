@@ -7,6 +7,7 @@ $hrTab = $hrTab ?? 'overview';
     <a href="<?= url('hr/payroll.php') ?>" class="tab <?= $hrTab === 'payroll' ? 'active' : '' ?>"><?= e(__('payroll')) ?></a>
     <?php if (canManageUsers()): ?>
     <a href="<?= url('hr/users.php') ?>" class="tab <?= $hrTab === 'users' ? 'active' : '' ?>"><?= e(__('user_accounts')) ?></a>
+    <a href="<?= url('backup/index.php') ?>" class="tab <?= $hrTab === 'backup' ? 'active' : '' ?>"><?= e(__('backup_export')) ?></a>
     <a href="<?= url('reset-data.php') ?>" class="tab <?= $hrTab === 'reset' ? 'active' : '' ?>"><?= e(__('reset_data')) ?></a>
     <?php endif; ?>
 </div>

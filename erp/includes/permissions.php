@@ -8,6 +8,7 @@ const PERM_HR = 'hr';
 const PERM_DELIVERY = 'delivery';
 const PERM_TREASURY = 'treasury';
 const PERM_REPORTS = 'reports';
+const PERM_GOLD = 'gold';
 
 function allPermissionKeys(): array
 {
@@ -20,6 +21,7 @@ function allPermissionKeys(): array
         PERM_DELIVERY,
         PERM_TREASURY,
         PERM_REPORTS,
+        PERM_GOLD,
     ];
 }
 
@@ -60,7 +62,7 @@ function isOwner(): bool
 function defaultPermissionsForRole(string $role): array
 {
     return match ($role) {
-        'manager' => [PERM_ORDERS, PERM_INVENTORY, PERM_PURCHASES, PERM_INVOICES, PERM_HR, PERM_DELIVERY, PERM_TREASURY, PERM_REPORTS],
+        'manager' => [PERM_ORDERS, PERM_INVENTORY, PERM_PURCHASES, PERM_INVOICES, PERM_HR, PERM_DELIVERY, PERM_TREASURY, PERM_REPORTS, PERM_GOLD],
         'sales' => [PERM_ORDERS, PERM_INVENTORY, PERM_INVOICES],
         'driver' => [PERM_DELIVERY, PERM_ORDERS],
         'staff' => [PERM_INVENTORY],
@@ -98,11 +100,6 @@ function userPermissions(): array
 function can(string $permission): bool
 {
     if (isOwner()) {
-        return true;
-    }
-
-    $role = $_SESSION['user_role'] ?? '';
-    if ($role === 'admin') {
         return true;
     }
 
@@ -158,6 +155,7 @@ function permissionLabel(string $key): string
         PERM_DELIVERY => __('delivery'),
         PERM_TREASURY => __('treasury'),
         PERM_REPORTS => __('reports'),
+        PERM_GOLD => __('gold_trading'),
         default => $key,
     };
 }

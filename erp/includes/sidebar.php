@@ -51,6 +51,7 @@ $navGroups = [
         'icon_class' => 'fa-solid fa-briefcase',
         'items' => [
             ['label' => 'treasury', 'path' => 'treasury/index.php', 'dir' => 'treasury', 'perm' => PERM_TREASURY, 'icon_class' => 'fa-solid fa-wallet'],
+            ['label' => 'gold_trading', 'path' => 'gold/index.php', 'dir' => 'gold', 'perm' => PERM_GOLD, 'icon_class' => 'fa-solid fa-coins'],
             ['label' => 'reports', 'path' => 'reports/index.php', 'dir' => 'reports', 'perm' => PERM_REPORTS, 'icon_class' => 'fa-solid fa-chart-line'],
             ['label' => 'hr', 'path' => 'hr/index.php', 'dir' => 'hr', 'perm' => PERM_HR, 'icon_class' => 'fa-solid fa-users-gear'],
         ],

@@ -1,4 +1,7 @@
 <?php
 
-/** يوجّه إلى fix-zero.php في المسار الرئيسي للمشروع */
-require dirname(__DIR__) . '/fix-zero.php';
+require_once __DIR__ . '/includes/functions.php';
+require_once __DIR__ . '/includes/auth.php';
+
+requireOwner();
+redirect(url('reset-data.php'));
