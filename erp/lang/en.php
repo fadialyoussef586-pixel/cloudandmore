@@ -43,6 +43,7 @@ return [
     'category_required' => 'Select a category or enter a new one',
     'custom_category' => 'New category',
     'custom_category_placeholder' => 'Example: Used devices / offers / special accessories',
+    'custom_category_or_pick' => 'Enter a new category, or pick one from the list above.',
     'unit' => 'Unit',
     'cost_price' => 'Cost Price',
     'sell_price' => 'Sell Price',

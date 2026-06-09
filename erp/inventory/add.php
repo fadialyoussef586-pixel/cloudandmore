@@ -9,9 +9,7 @@ $pageTitle = __('add_product');
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $sku = trim($_POST['sku']);
     $name = trim($_POST['name'] ?? '');
-    $category = trim($_POST['custom_category'] ?? '') !== ''
-        ? trim($_POST['custom_category'])
-        : trim($_POST['category'] ?? '');
+    $category = resolveProductCategoryFromPost($_POST);
     if ($category === '') {
         flash('error', __('category_required'));
         redirect(url('inventory/add.php'));
@@ -31,20 +29,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 require __DIR__ . '/../includes/header.php';
+$existingCategories = productCategories();
 ?>
 <div class="card"><div class="card-body">
 <form method="post" enctype="multipart/form-data">
 <div class="form-grid">
     <div class="form-group"><label><?= e(__('sku')) ?></label><input name="sku" value="<?= e($_POST['sku'] ?? '') ?>" required></div>
     <div class="form-group"><label><?= e(__('product_name')) ?></label><input name="name" value="<?= e($_POST['name'] ?? '') ?>" required></div>
-    <div class="form-group"><label><?= e(__('category')) ?></label>
-    <select name="category">
-        <option value="">--</option>
-        <?php foreach (productCategories() as $value => $label): ?>
-            <option value="<?= e($value) ?>" <?= ($value === ($_POST['category'] ?? '')) ? 'selected' : '' ?>><?= e($label) ?></option>
-        <?php endforeach; ?>
-    </select></div>
-    <div class="form-group"><label><?= e(__('custom_category')) ?></label><input name="custom_category" value="<?= e($_POST['custom_category'] ?? '') ?>" placeholder="<?= e(__('custom_category_placeholder')) ?>"></div>
+    <div class="form-group" style="grid-column:1/-1">
+        <label><?= e(__('category')) ?> *</label>
+        <?php if ($existingCategories !== []): ?>
+            <select name="category" style="margin-bottom:0.5rem">
+                <option value="">--</option>
+                <?php foreach ($existingCategories as $value => $label): ?>
+                    <option value="<?= e($value) ?>" <?= ($value === ($_POST['category'] ?? '')) ? 'selected' : '' ?>><?= e($label) ?></option>
+                <?php endforeach; ?>
+            </select>
+            <p class="text-muted" style="margin:0 0 0.5rem;font-size:0.85rem"><?= e(__('custom_category_or_pick')) ?></p>
+        <?php endif; ?>
+        <input name="custom_category" value="<?= e($_POST['custom_category'] ?? '') ?>" placeholder="<?= e(__('custom_category_placeholder')) ?>" <?= $existingCategories === [] ? 'required' : '' ?>>
+    </div>
     <div class="form-group"><label><?= e(__('product_image')) ?></label><input type="file" name="image" accept="image/*"></div>
     <div class="form-group"><label><?= e(__('unit')) ?></label><input name="unit" value="<?= e($_POST['unit'] ?? 'piece') ?>"></div>
     <div class="form-group"><label><?= e(__('quantity')) ?></label><input type="number" name="quantity" value="<?= e($_POST['quantity'] ?? '0') ?>" min="0"></div>

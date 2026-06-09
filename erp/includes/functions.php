@@ -162,16 +162,72 @@ function months(): array
     ];
 }
 
-function productCategories(): array
+function productCategories(?string $include = null): array
 {
-    return [
-        'IKOS Devices' => __('cat_devices'),
-        'IQOS Devices' => __('cat_devices'),
-        'Accessories' => __('cat_accessories'),
-        'Asma Cloud & More' => __('cat_asma_cloud'),
-        'Cloud and More' => __('cat_asma_cloud'),
-        'Consumables' => __('cat_consumables'),
-    ];
+    static $cache = null;
+    if ($cache === null) {
+        ensureDefaultCategoriesRemoved();
+        $cache = [];
+        try {
+            $rows = db()->query(
+                "SELECT DISTINCT TRIM(category) AS category
+                 FROM products
+                 WHERE category IS NOT NULL AND TRIM(category) != ''
+                 ORDER BY category ASC"
+            )->fetchAll(PDO::FETCH_COLUMN);
+
+            foreach ($rows as $cat) {
+                $cache[$cat] = $cat;
+            }
+        } catch (Throwable) {
+            $cache = [];
+        }
+    }
+
+    if ($include === null || trim($include) === '' || isset($cache[$include])) {
+        return $cache;
+    }
+
+    $merged = $cache;
+    $merged[trim($include)] = trim($include);
+
+    return $merged;
+}
+
+function ensureDefaultCategoriesRemoved(): void
+{
+    static $checked = false;
+    if ($checked) {
+        return;
+    }
+    $checked = true;
+
+    $flag = BASE_PATH . '/storage/categories_reset_v1.flag';
+    if (is_file($flag)) {
+        return;
+    }
+
+    $dir = dirname($flag);
+    if (!is_dir($dir)) {
+        mkdir($dir, 0755, true);
+    }
+
+    try {
+        db()->exec("UPDATE products SET category = NULL WHERE category IS NOT NULL AND TRIM(category) <> ''");
+        file_put_contents($flag, '1');
+    } catch (Throwable) {
+        // DB may not be ready during install
+    }
+}
+
+function resolveProductCategoryFromPost(array $post): string
+{
+    $custom = trim($post['custom_category'] ?? '');
+    if ($custom !== '') {
+        return $custom;
+    }
+
+    return trim($post['category'] ?? '');
 }
 
 function companyLogoFile(): ?string

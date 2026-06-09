@@ -42,6 +42,7 @@ return [
     'category_required' => 'اختر فئة أو أدخل فئة جديدة',
     'custom_category' => 'فئة جديدة',
     'custom_category_placeholder' => 'مثال: أجهزة مستعملة / عروض / ملحقات خاصة',
+    'custom_category_or_pick' => 'أدخل فئة جديدة، أو اختر فئة مسجّلة من القائمة.',
     'unit' => 'الوحدة',
     'cost_price' => 'سعر التكلفة',
     'sell_price' => 'سعر البيع',

@@ -17,11 +17,16 @@ $pageTitle = __('edit');
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $sku = trim($_POST['sku']);
     $name = trim($_POST['name'] ?? '');
+    $category = resolveProductCategoryFromPost($_POST);
+    if ($category === '') {
+        flash('error', __('category_required'));
+        redirect(url('inventory/edit.php?id=' . $id));
+    }
     $image = saveProductImage($_FILES['image'] ?? [], $sku) ?: $product['image'];
     $stmt = db()->prepare('UPDATE products SET sku=?, name_ar=?, name_en=?, category=?, unit=?, min_stock=?, cost_price=?, sell_price=?, image=?, is_published=? WHERE id=?');
     $stmt->execute([
         $sku, $name, $name,
-        trim($_POST['category'] ?? ''), trim($_POST['unit'] ?? 'piece'),
+        $category, trim($_POST['unit'] ?? 'piece'),
         (int) ($_POST['min_stock'] ?? 5), (float) ($_POST['cost_price'] ?? 0),
         (float) ($_POST['sell_price'] ?? 0), $image,
         isset($_POST['is_published']) ? 1 : 0, $id,
@@ -31,6 +36,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 require __DIR__ . '/../includes/header.php';
+$existingCategories = productCategories($product['category'] ?? null);
+$currentCategory = trim((string) ($product['category'] ?? ''));
+$categoryInList = $currentCategory !== '' && isset($existingCategories[$currentCategory]);
 ?>
 <div class="card"><div class="card-body">
 <form method="post" enctype="multipart/form-data">
@@ -40,12 +48,19 @@ require __DIR__ . '/../includes/header.php';
     </p>
     <div class="form-group"><label><?= e(__('sku')) ?></label><input name="sku" value="<?= e($product['sku']) ?>" required></div>
     <div class="form-group"><label><?= e(__('product_name')) ?></label><input name="name" value="<?= e(productName($product)) ?>" required></div>
-    <div class="form-group"><label><?= e(__('category')) ?></label>
-    <select name="category" required>
-        <?php foreach (productCategories() as $value => $label): ?>
-            <option value="<?= e($value) ?>" <?= $product['category'] === $value ? 'selected' : '' ?>><?= e($label) ?></option>
-        <?php endforeach; ?>
-    </select></div>
+    <div class="form-group" style="grid-column:1/-1">
+        <label><?= e(__('category')) ?> *</label>
+        <?php if ($existingCategories !== []): ?>
+            <select name="category" style="margin-bottom:0.5rem">
+                <option value="">--</option>
+                <?php foreach ($existingCategories as $value => $label): ?>
+                    <option value="<?= e($value) ?>" <?= $categoryInList && $currentCategory === $value ? 'selected' : '' ?>><?= e($label) ?></option>
+                <?php endforeach; ?>
+            </select>
+            <p class="text-muted" style="margin:0 0 0.5rem;font-size:0.85rem"><?= e(__('custom_category_or_pick')) ?></p>
+        <?php endif; ?>
+        <input name="custom_category" value="<?= e($categoryInList ? '' : $currentCategory) ?>" placeholder="<?= e(__('custom_category_placeholder')) ?>" <?= $existingCategories === [] ? 'required' : '' ?>>
+    </div>
     <div class="form-group"><label><?= e(__('product_image')) ?></label><input type="file" name="image" accept="image/*"></div>
     <div class="form-group"><label><?= e(__('unit')) ?></label><input name="unit" value="<?= e($product['unit']) ?>"></div>
     <div class="form-group"><label><?= e(__('quantity')) ?></label><input type="number" value="<?= (int) $product['quantity'] ?>" disabled></div>
