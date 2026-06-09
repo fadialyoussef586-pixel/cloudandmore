@@ -29,7 +29,7 @@ require __DIR__ . '/includes/header.php';
 <section class="shop-hero">
   <?= companyLogoWithTagline('company-logo company-logo--hero', false, 'shop-brand-tagline') ?>
   <h1><?= e(__('shop')) ?></h1>
-  <p><?= e(companyTagline()) ?></p>
+  <p><?= e(__('shop_tagline')) ?></p>
 </section>
 
 <form method="get" class="shop-search" action="<?= shopUrl() ?>">

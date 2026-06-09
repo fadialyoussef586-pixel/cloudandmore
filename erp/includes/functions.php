@@ -214,7 +214,9 @@ function ensureDefaultCategoriesRemoved(): void
 
     try {
         db()->exec("UPDATE products SET category = NULL WHERE category IS NOT NULL AND TRIM(category) <> ''");
-        file_put_contents($flag, '1');
+        if (is_writable($dir)) {
+            @file_put_contents($flag, '1');
+        }
     } catch (Throwable) {
         // DB may not be ready during install
     }
