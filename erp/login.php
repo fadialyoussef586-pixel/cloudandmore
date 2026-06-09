@@ -27,7 +27,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <title><?= e(__('login')) ?> | <?= e(__('app_name')) ?></title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="<?= asset('css/app.css') ?>">
-    <link rel="icon" href="<?= e(companyLogoUrl()) ?>" type="image/png">
+    <?php renderPwaHeadTags('erp'); ?>
 </head>
 <body>
 <div class="login-page">

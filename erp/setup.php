@@ -53,6 +53,9 @@ try {
     ensureOwnerAccount($pdo);
     removeDemoUsers($pdo);
 
+    require_once __DIR__ . '/includes/pwa_helpers.php';
+    ensureAppIcons();
+
     $wantReset = ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['confirm'] ?? '') === 'RESET')
         || (isset($_GET['reset']) && $_GET['reset'] === 'RESET');
 

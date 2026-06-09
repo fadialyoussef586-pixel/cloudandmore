@@ -12,6 +12,7 @@ require_once __DIR__ . '/returns_helpers.php';
 require_once __DIR__ . '/purchase_helpers.php';
 require_once __DIR__ . '/maintenance_helpers.php';
 require_once __DIR__ . '/current_accounts_helpers.php';
+require_once __DIR__ . '/pwa_helpers.php';
 require_once __DIR__ . '/backup_helpers.php';
 require_once __DIR__ . '/quick_actions.php';
 require_once __DIR__ . '/permissions.php';

@@ -1911,9 +1911,19 @@ body.sidebar-collapsed .nav-item::before {
   isolation: isolate;
 }
 
-.table-actions .btn {
-  position: relative;
-  z-index: 11;
+@media (display-mode: standalone) {
+  body {
+    padding-top: env(safe-area-inset-top);
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  .sidebar {
+    padding-top: env(safe-area-inset-top);
+  }
+
+  .topbar {
+    padding-top: max(0.75rem, env(safe-area-inset-top));
+  }
 }
 
 .search-inline-form {

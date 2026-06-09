@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Cloud and More">
+  <defs>
+    <linearGradient id="brandGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#00a8c9"/>
+      <stop offset="100%" style="stop-color:#0088a3"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" fill="#ffffff"/>
+  <rect x="96" y="96" width="320" height="320" rx="72" fill="url(#brandGrad)"/>
+  <path d="M176 248c0-44 36-80 80-80s80 36 80 80-36 80-80 80" fill="none" stroke="#ffffff" stroke-width="22" stroke-linecap="round"/>
+  <circle cx="256" cy="248" r="28" fill="#ffffff"/>
+</svg>

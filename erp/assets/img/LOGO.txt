@@ -5,6 +5,10 @@
   logo.webp
   logo.svg
 
+أيقونة «إضافة للشاشة الرئيسية» (مثل التطبيق):
+  app-icon.png   — مربّع 512×512 (يُفضّل). إن وُجد يُستخدم تلقائياً.
+  أو يُنشأ من logo.png عند فتح setup.php (يتطلب GD على السيرفر).
+
 أو عيّن رابطاً كاملاً في Render:
   COMPANY_LOGO_URL=https://example.com/your-logo.png
 

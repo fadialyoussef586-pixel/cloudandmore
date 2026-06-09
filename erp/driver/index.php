@@ -35,6 +35,7 @@ $pageTitle = __('driver_portal');
 <title><?= e($pageTitle) ?> | <?= e(COMPANY_NAME) ?></title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=Tajawal:wght@400;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="<?= asset('css/app.css') ?>"><link rel="stylesheet" href="<?= asset('css/shop.css') ?>">
+<?php renderPwaHeadTags('erp'); ?>
 </head>
 <body class="driver-layout">
 <header class="driver-header">
