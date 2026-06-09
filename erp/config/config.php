@@ -79,3 +79,12 @@ define('COMPANY_LOGO_URL', appEnv('COMPANY_LOGO_URL', '', true));
 if (!defined('OWNER_EMAIL')) {
     define('OWNER_EMAIL', strtolower(trim(appEnv('OWNER_EMAIL', 'fadialyoussef586@gmail.com'))));
 }
+
+// WhatsApp: رمز الدولة الافتراضي للأرقام بدون + (961 لبنان، 966 سعودية...)
+if (!defined('WHATSAPP_DEFAULT_COUNTRY')) {
+    define('WHATSAPP_DEFAULT_COUNTRY', preg_replace('/\D/', '', appEnv('WHATSAPP_DEFAULT_COUNTRY', '961')));
+}
+
+if (!defined('COMPANY_SUPPORT_PHONE')) {
+    define('COMPANY_SUPPORT_PHONE', appEnv('COMPANY_SUPPORT_PHONE', '', true));
+}

@@ -20,6 +20,26 @@ try {
     runSqlFile($pdo, __DIR__ . '/database/migrate_invoice_returns.sql');
     runSqlFile($pdo, __DIR__ . '/database/migrate_purchases.sql');
 
+    $migrateMaintenance = __DIR__ . '/database/migrate_maintenance.sql';
+    if (is_file($migrateMaintenance)) {
+        runSqlFile($pdo, $migrateMaintenance);
+    }
+
+    $migrateAccounts = __DIR__ . '/database/migrate_current_accounts.sql';
+    if (is_file($migrateAccounts)) {
+        runSqlFile($pdo, $migrateAccounts);
+    }
+
+    $migrateInvoicePending = __DIR__ . '/database/migrate_invoice_pending.sql';
+    if (is_file($migrateInvoicePending)) {
+        runSqlFile($pdo, $migrateInvoicePending);
+    }
+
+    $migrateCustomers = __DIR__ . '/database/migrate_customers_enhanced.sql';
+    if (is_file($migrateCustomers)) {
+        runSqlFile($pdo, $migrateCustomers);
+    }
+
     $migratePerm = __DIR__ . '/database/migrate_permissions.sql';
     if (is_file($migratePerm)) {
         runSqlFile($pdo, $migratePerm);

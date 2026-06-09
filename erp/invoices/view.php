@@ -12,42 +12,12 @@ ensureTreasuryTables();
 $id = (int) ($_GET['id'] ?? 0);
 
 if (isset($_GET['pay'])) {
-    $pdo = db();
-    $pdo->beginTransaction();
     try {
-        $paymentStmt = $pdo->prepare(
-            "SELECT i.*, c.name AS customer_name
-             FROM invoices i
-             LEFT JOIN customers c ON c.id = i.customer_id
-             WHERE i.id = ?
-             FOR UPDATE"
-        );
-        $paymentStmt->execute([$id]);
-        $paymentInvoice = $paymentStmt->fetch();
-
-        if ($paymentInvoice
-            && ($paymentInvoice['payment_method'] ?? '') === 'deferred'
-            && ($paymentInvoice['invoice_type'] ?? 'sale') === 'sale'
-            && ($paymentInvoice['status'] ?? '') !== 'paid'
-        ) {
-            $pdo->prepare("UPDATE invoices SET status = 'paid' WHERE id = ?")->execute([$id]);
-            recordInvoiceTreasuryDeposit(
-                (float) ($paymentInvoice['total'] ?? 0),
-                (string) ($paymentInvoice['invoice_number'] ?? ''),
-                (string) ($paymentInvoice['customer_name'] ?? ''),
-                $_SESSION['user_id'] ?? null,
-                $pdo
-            );
-        }
-
-        $pdo->commit();
+        markInvoiceAsPaid($id, db(), $_SESSION['user_id'] ?? null);
+        flash('success', __('mark_paid'));
     } catch (Throwable $e) {
-        $pdo->rollBack();
-        flash('error', __('error'));
-        redirect(url('invoices/view.php?id=' . $id));
+        flash('error', $e->getMessage() === 'invoice_not_pending' ? __('invoice_already_paid') : __('error'));
     }
-
-    flash('success', __('mark_paid'));
     redirect(url('invoices/view.php?id=' . $id));
 }
 
@@ -111,13 +81,17 @@ require __DIR__ . '/../includes/header.php';
 <div class="page-actions no-print">
     <a href="<?= url('invoices/index.php') ?>" class="btn btn-secondary"><?= e(__('cancel')) ?></a>
     <a href="<?= url('invoices/create.php') ?>" class="btn btn-primary"><?= e(__('new_sale')) ?></a>
-    <?php if (($invoice['payment_method'] ?? '') === 'deferred' && ($invoice['status'] ?? '') !== 'paid' && ($invoice['invoice_type'] ?? 'sale') === 'sale'): ?>
-    <a href="<?= url('invoices/view.php?id=' . $id . '&pay=1') ?>" class="btn btn-success"><?= e(__('mark_paid')) ?></a>
+    <?php if (!empty($invoice['customer_id']) && can(PERM_CUSTOMERS)): ?>
+    <a href="<?= url('customers/view.php?id=' . (int) $invoice['customer_id']) ?>" class="btn btn-secondary"><?= e(__('cust_view_profile')) ?></a>
+    <?php endif; ?>
+    <?php if (invoiceAwaitingPayment($invoice)): ?>
+    <a href="<?= url('invoices/view.php?id=' . $id . '&pay=1') ?>" class="btn btn-success" data-confirm="<?= e(__('confirm_mark_paid')) ?>"><?= e(__('mark_paid')) ?></a>
     <?php endif; ?>
     <?php if (canDelete()): ?>
     <a href="<?= url('invoices/index.php?delete=' . $id) ?>" class="btn btn-danger" data-confirm="<?= e(__('confirm_delete')) ?>"><?= e(__('delete')) ?></a>
     <?php endif; ?>
     <a href="<?= url('invoices/print.php?id=' . $id) ?>" class="btn btn-secondary" target="_blank" rel="noopener"><?= e(__('print')) ?></a>
+    <?= invoiceWhatsAppButton($id, $invoice, $items, 'btn btn-whatsapp') ?>
 </div>
 
 <article class="invoice-print card">
@@ -134,6 +108,7 @@ require __DIR__ . '/../includes/header.php';
             <strong><?= formatMoney((float) $invoice['total']) ?></strong>
             <div class="invoice-hero-badges">
                 <?= invoiceTypeBadge($invoice['invoice_type'] ?? 'sale') ?>
+                <?= invoicePaymentStatusBadge($invoice) ?>
                 <?php if (($invoice['invoice_type'] ?? 'sale') === 'sale'): ?>
                     <?= paymentMethodBadge($invoice['payment_method'] ?? 'cash') ?>
                 <?php endif; ?>
@@ -251,8 +226,14 @@ require __DIR__ . '/../includes/header.php';
     </div>
 
     <footer class="invoice-print-footer">
-        <p class="invoice-footer-title"><?= e(__('invoice_thanks')) ?></p>
-        <p><?= e(COMPANY_NAME) ?></p>
+        <?php
+        $invoiceNumber = $invoice['invoice_number'] ?? '';
+        $footer = invoiceProfessionalFooterLines($invoiceNumber);
+        ?>
+        <p class="invoice-footer-title"><?= e($footer['title']) ?></p>
+        <p class="invoice-footer-tagline"><?= e($footer['tagline']) ?></p>
+        <p class="invoice-footer-notice"><?= e($footer['notice']) ?></p>
+        <p class="invoice-footer-support"><?= e($footer['support']) ?></p>
     </footer>
     <?php if (!empty($invoice['customer_name']) && $invoice['customer_name'] !== __('walk_in_customer')): ?>
     <div class="invoice-print-signature">

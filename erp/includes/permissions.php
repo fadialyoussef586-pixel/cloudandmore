@@ -8,6 +8,9 @@ const PERM_HR = 'hr';
 const PERM_DELIVERY = 'delivery';
 const PERM_TREASURY = 'treasury';
 const PERM_REPORTS = 'reports';
+const PERM_MAINTENANCE = 'maintenance';
+const PERM_CURRENT_ACCOUNTS = 'current_accounts';
+const PERM_CUSTOMERS = 'customers';
 
 function allPermissionKeys(): array
 {
@@ -20,6 +23,9 @@ function allPermissionKeys(): array
         PERM_DELIVERY,
         PERM_TREASURY,
         PERM_REPORTS,
+        PERM_MAINTENANCE,
+        PERM_CURRENT_ACCOUNTS,
+        PERM_CUSTOMERS,
     ];
 }
 
@@ -60,8 +66,8 @@ function isOwner(): bool
 function defaultPermissionsForRole(string $role): array
 {
     return match ($role) {
-        'manager' => [PERM_ORDERS, PERM_INVENTORY, PERM_PURCHASES, PERM_INVOICES, PERM_HR, PERM_DELIVERY, PERM_TREASURY, PERM_REPORTS],
-        'sales' => [PERM_ORDERS, PERM_INVENTORY, PERM_INVOICES],
+        'manager' => [PERM_ORDERS, PERM_INVENTORY, PERM_PURCHASES, PERM_INVOICES, PERM_HR, PERM_DELIVERY, PERM_TREASURY, PERM_REPORTS, PERM_MAINTENANCE, PERM_CURRENT_ACCOUNTS, PERM_CUSTOMERS],
+        'sales' => [PERM_ORDERS, PERM_INVENTORY, PERM_INVOICES, PERM_MAINTENANCE, PERM_CUSTOMERS],
         'driver' => [PERM_DELIVERY, PERM_ORDERS],
         'staff' => [PERM_INVENTORY],
         default => allPermissionKeys(),
@@ -153,6 +159,9 @@ function permissionLabel(string $key): string
         PERM_DELIVERY => __('delivery'),
         PERM_TREASURY => __('treasury'),
         PERM_REPORTS => __('reports'),
+        PERM_MAINTENANCE => __('maintenance'),
+        PERM_CURRENT_ACCOUNTS => __('current_accounts'),
+        PERM_CUSTOMERS => __('customers'),
         default => $key,
     };
 }

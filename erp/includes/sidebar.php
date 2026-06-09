@@ -35,6 +35,8 @@ $navGroups = [
         'items' => [
             ['label' => 'orders', 'path' => 'orders/index.php', 'dir' => 'orders', 'perm' => PERM_ORDERS, 'icon_class' => 'fa-solid fa-cart-shopping'],
             ['label' => 'invoices', 'path' => 'invoices/index.php', 'dir' => 'invoices', 'perm' => PERM_INVOICES, 'icon_class' => 'fa-solid fa-file-invoice-dollar'],
+            ['label' => 'customers', 'path' => 'customers/index.php', 'dir' => 'customers', 'perm' => PERM_CUSTOMERS, 'icon_class' => 'fa-solid fa-user-group'],
+            ['label' => 'maintenance', 'path' => 'maintenance/index.php', 'dir' => 'maintenance', 'perm' => PERM_MAINTENANCE, 'icon_class' => 'fa-solid fa-screwdriver-wrench'],
             ['label' => 'delivery', 'path' => 'delivery/index.php', 'dir' => 'delivery', 'perm' => PERM_DELIVERY, 'icon_class' => 'fa-solid fa-truck-fast'],
         ],
     ],
@@ -51,6 +53,7 @@ $navGroups = [
         'icon_class' => 'fa-solid fa-briefcase',
         'items' => [
             ['label' => 'treasury', 'path' => 'treasury/index.php', 'dir' => 'treasury', 'perm' => PERM_TREASURY, 'icon_class' => 'fa-solid fa-wallet'],
+            ['label' => 'current_accounts', 'path' => 'accounts/index.php', 'dir' => 'accounts', 'perm' => PERM_CURRENT_ACCOUNTS, 'icon_class' => 'fa-solid fa-hand-holding-dollar'],
             ['label' => 'reports', 'path' => 'reports/index.php', 'dir' => 'reports', 'perm' => PERM_REPORTS, 'icon_class' => 'fa-solid fa-chart-line'],
             ['label' => 'hr', 'path' => 'hr/index.php', 'dir' => 'hr', 'perm' => PERM_HR, 'icon_class' => 'fa-solid fa-users-gear'],
         ],

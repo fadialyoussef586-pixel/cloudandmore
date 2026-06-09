@@ -22,16 +22,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($name && $phone && $address) {
         $pdo = db(); $pdo->beginTransaction();
         try {
-            $customerId = null;
-            if ($email) {
-                $c = $pdo->prepare('SELECT id FROM customers WHERE email = ?');
-                $c->execute([$email]);
-                $customerId = $c->fetchColumn();
-            }
-            if (!$customerId) {
-                $pdo->prepare('INSERT INTO customers (name, email, phone, address) VALUES (?,?,?,?)')->execute([$name, $email ?: null, $phone, $address]);
-                $customerId = dbLastInsertId($pdo);
-            }
+            $customerId = findOrCreateCustomer($name, $phone, $email ?: null, $address);
             $orderNum = generateNumber('ORD');
             $pdo->prepare('INSERT INTO orders (order_number, customer_id, customer_name, customer_email, customer_phone, delivery_address, subtotal, total, status, source) VALUES (?,?,?,?,?,?,?,?,?,?)')
                 ->execute([$orderNum, $customerId, $name, $email ?: null, $phone, $address, $total, $total, 'new', 'website']);

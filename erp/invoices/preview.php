@@ -45,9 +45,13 @@ require __DIR__ . '/../includes/header.php';
     <a href="<?= url('invoices/index.php') ?>" class="btn btn-secondary"><?= e(__('cancel')) ?></a>
     <a href="<?= url('invoices/create.php') ?>" class="btn btn-primary"><?= e(__('new_sale')) ?></a>
     <a href="<?= url('invoices/print.php?id=' . $id) ?>" class="btn btn-secondary" target="_blank" rel="noopener"><?= e(__('print')) ?></a>
+    <?= invoiceWhatsAppButton($id, $invoice, $items, 'btn btn-whatsapp') ?>
     <a href="<?= url('invoices/view.php?id=' . $id) ?>" class="btn btn-secondary"><?= e(__('returns_and_exchanges')) ?></a>
-    <?php if (($invoice['payment_method'] ?? '') === 'deferred' && ($invoice['status'] ?? '') !== 'paid' && ($invoice['invoice_type'] ?? 'sale') === 'sale'): ?>
-        <a href="<?= url('invoices/view.php?id=' . $id . '&pay=1') ?>" class="btn btn-success"><?= e(__('mark_paid')) ?></a>
+    <?php if (!empty($invoice['customer_id']) && can(PERM_CUSTOMERS)): ?>
+        <a href="<?= url('customers/view.php?id=' . (int) $invoice['customer_id']) ?>" class="btn btn-secondary"><?= e(__('cust_view_profile')) ?></a>
+    <?php endif; ?>
+    <?php if (invoiceAwaitingPayment($invoice)): ?>
+        <a href="<?= url('invoices/index.php?pay=' . $id) ?>" class="btn btn-success" data-confirm="<?= e(__('confirm_mark_paid')) ?>"><?= e(__('mark_paid')) ?></a>
     <?php endif; ?>
 </div>
 
@@ -65,6 +69,7 @@ require __DIR__ . '/../includes/header.php';
             <strong><?= formatMoney((float) $invoice['total']) ?></strong>
             <div class="invoice-hero-badges">
                 <?= invoiceTypeBadge($invoice['invoice_type'] ?? 'sale') ?>
+                <?= invoicePaymentStatusBadge($invoice) ?>
                 <?php if (($invoice['invoice_type'] ?? 'sale') === 'sale'): ?>
                     <?= paymentMethodBadge($invoice['payment_method'] ?? 'cash') ?>
                 <?php endif; ?>
@@ -92,7 +97,13 @@ require __DIR__ . '/../includes/header.php';
         </div>
         <aside class="invoice-customer-card">
             <span class="invoice-section-label"><?= e(__('customer')) ?></span>
-            <strong class="invoice-customer-name"><?= e($customerNameDisplay) ?></strong>
+            <strong class="invoice-customer-name">
+                <?php if (!empty($invoice['customer_id']) && can(PERM_CUSTOMERS)): ?>
+                    <a href="<?= url('customers/view.php?id=' . (int) $invoice['customer_id']) ?>"><?= e($customerNameDisplay) ?></a>
+                <?php else: ?>
+                    <?= e($customerNameDisplay) ?>
+                <?php endif; ?>
+            </strong>
             <div class="invoice-customer-detail">
                 <span><?= e(__('phone')) ?></span>
                 <strong><?= e($customerPhone !== '' ? $customerPhone : '-') ?></strong>
@@ -176,8 +187,14 @@ require __DIR__ . '/../includes/header.php';
     </div>
 
     <footer class="invoice-print-footer">
-        <p class="invoice-footer-title"><?= e(__('invoice_thanks')) ?></p>
-        <p><?= e(COMPANY_NAME) ?></p>
+        <?php
+        $invoiceNumber = $invoice['invoice_number'] ?? '';
+        $footer = invoiceProfessionalFooterLines($invoiceNumber);
+        ?>
+        <p class="invoice-footer-title"><?= e($footer['title']) ?></p>
+        <p class="invoice-footer-tagline"><?= e($footer['tagline']) ?></p>
+        <p class="invoice-footer-notice"><?= e($footer['notice']) ?></p>
+        <p class="invoice-footer-support"><?= e($footer['support']) ?></p>
     </footer>
 </article>
 

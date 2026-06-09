@@ -19,7 +19,8 @@ if (!isset($pageTitle)) {
         <a href="<?= shopUrl() ?>" class="shop-logo"><?= companyLogoHtml('company-logo company-logo--shop') ?></a>
         <nav class="shop-links">
             <a href="<?= shopUrl() ?>"><?= e(__('shop')) ?></a>
-            <a href="<?= shopUrl('cart.php') ?>"><?= e(__('cart')) ?> (<?= array_sum($_SESSION['cart'] ?? []) ?>)</a>
+            <a href="<?= shopUrl('maintenance.php') ?>"><?= e(__('maintenance')) ?></a>
+            <a href="<?= shopUrl('cart.php') ?>" class="shop-cart-link"><?= e(__('cart')) ?> <span class="shop-cart-count"><?= array_sum($_SESSION['cart'] ?? []) ?></span></a>
             <form method="post" action="<?= url('set-lang.php') ?>" style="display:inline">
                 <select name="lang" onchange="this.form.submit()" aria-label="<?= e(__('language')) ?>">
                     <option value="en" <?= lang() === 'en' ? 'selected' : '' ?>>EN</option>

@@ -25,7 +25,13 @@ require __DIR__ . '/../includes/header.php';
 </div>
 <div class="card"><div class="card-body">
 <h2><?= e($order['order_number']) ?> <?= orderStatusBadge($order['status']) ?></h2>
-<p><strong><?= e(__('customer')) ?>:</strong> <?= e($order['customer_name']) ?> | <?= e($order['customer_phone']) ?></p>
+<p><strong><?= e(__('customer')) ?>:</strong>
+<?php if (!empty($order['customer_id']) && can(PERM_CUSTOMERS)): ?>
+<a href="<?= url('customers/view.php?id=' . (int) $order['customer_id']) ?>"><?= e($order['customer_name']) ?></a>
+<?php else: ?>
+<?= e($order['customer_name']) ?>
+<?php endif; ?>
+| <?= e($order['customer_phone']) ?></p>
 <p><strong><?= e(__('email')) ?>:</strong> <?= e($order['customer_email'] ?: '-') ?></p>
 <p><strong><?= e(__('address')) ?>:</strong> <?= e($order['delivery_address']) ?></p>
 <table style="margin-top:1.5rem"><thead><tr><th></th><th><?= e(__('product')) ?></th><th><?= e(__('quantity')) ?></th><th><?= e(__('total')) ?></th></tr></thead><tbody>

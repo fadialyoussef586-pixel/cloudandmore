@@ -10,41 +10,12 @@ ensureTreasuryTables();
 
 if (isset($_GET['pay'])) {
     $id = (int) $_GET['pay'];
-    $pdo = db();
-    $pdo->beginTransaction();
     try {
-        $stmt = $pdo->prepare(
-            "SELECT i.*, c.name AS customer_name
-             FROM invoices i
-             LEFT JOIN customers c ON c.id = i.customer_id
-             WHERE i.id = ?
-             FOR UPDATE"
-        );
-        $stmt->execute([$id]);
-        $invoice = $stmt->fetch();
-        if ($invoice
-            && ($invoice['payment_method'] ?? '') === 'deferred'
-            && ($invoice['invoice_type'] ?? 'sale') === 'sale'
-            && ($invoice['status'] ?? '') !== 'paid'
-        ) {
-            $pdo->prepare("UPDATE invoices SET status = 'paid' WHERE id = ?")->execute([$id]);
-            recordInvoiceTreasuryDeposit(
-                (float) ($invoice['total'] ?? 0),
-                (string) ($invoice['invoice_number'] ?? ''),
-                (string) ($invoice['customer_name'] ?? ''),
-                $_SESSION['user_id'] ?? null,
-                $pdo
-            );
-        }
-        $pdo->commit();
+        markInvoiceAsPaid($id, db(), $_SESSION['user_id'] ?? null);
+        flash('success', __('mark_paid'));
     } catch (Throwable $e) {
-        if ($pdo->inTransaction()) {
-            $pdo->rollBack();
-        }
-        flash('error', __('error'));
-        redirect(url('invoices/index.php'));
+        flash('error', $e->getMessage() === 'invoice_not_pending' ? __('invoice_already_paid') : __('error'));
     }
-    flash('success', __('mark_paid'));
     redirect(url('invoices/index.php'));
 }
 
@@ -94,20 +65,30 @@ if (isset($_GET['delete'])) {
 
 $pageTitle = __('invoices');
 
+$pendingPaymentCount = (int) db()->query(
+    "SELECT COUNT(*) FROM invoices
+     WHERE invoice_type = 'sale' AND status = 'sent' AND total > 0"
+)->fetchColumn();
+
 $invoices = db()->query("
-    SELECT i.*, c.name AS customer_name,
+    SELECT i.*, c.id AS customer_id, c.name AS customer_name, c.phone AS customer_phone,
            MIN(ii.description) AS product_name,
            MIN(ii.serial_number) AS serial_number,
            COUNT(ii.id) AS item_count
     FROM invoices i
     JOIN customers c ON c.id = i.customer_id
     LEFT JOIN invoice_items ii ON ii.invoice_id = i.id
-    GROUP BY i.id, c.name
+    GROUP BY i.id, c.id, c.name, c.phone
     ORDER BY i.created_at DESC
 ")->fetchAll();
 
 require __DIR__ . '/../includes/header.php';
 ?>
+<?php if ($pendingPaymentCount > 0): ?>
+<div class="alert alert-warning" style="margin-bottom:1rem">
+    <?= e(__('pending_invoices_notice')) ?>: <strong><?= $pendingPaymentCount ?></strong>
+</div>
+<?php endif; ?>
 <div class="page-actions">
     <span></span>
     <a href="<?= url('invoices/create.php') ?>" class="btn btn-primary"><?= e(__('new_sale')) ?></a>
@@ -121,10 +102,12 @@ require __DIR__ . '/../includes/header.php';
             <thead>
                 <tr>
                     <th><?= e(__('invoice_number')) ?></th>
+                    <th><?= e(__('customer')) ?></th>
                     <th><?= e(__('invoice_type')) ?></th>
                     <th><?= e(__('product')) ?></th>
                     <th><?= e(__('serial_number')) ?></th>
                     <th><?= e(__('payment_method')) ?></th>
+                    <th><?= e(__('payment')) ?></th>
                     <th><?= e(__('total')) ?></th>
                     <th><?= e(__('date')) ?></th>
                     <th><?= e(__('actions')) ?></th>
@@ -143,17 +126,26 @@ require __DIR__ . '/../includes/header.php';
                 ?>
                 <tr>
                     <td><a href="<?= url('invoices/preview.php?id=' . $inv['id']) ?>"><?= e($inv['invoice_number']) ?></a></td>
+                    <td>
+                        <?php if (!empty($inv['customer_id']) && can(PERM_CUSTOMERS)): ?>
+                            <a href="<?= url('customers/view.php?id=' . (int) $inv['customer_id']) ?>"><?= e($inv['customer_name']) ?></a>
+                        <?php else: ?>
+                            <?= e($inv['customer_name']) ?>
+                        <?php endif; ?>
+                    </td>
                     <td><?= invoiceTypeBadge($inv['invoice_type'] ?? 'sale') ?></td>
                     <td><?= e($productSummary) ?></td>
                     <td><code class="serial-code"><?= e($itemCount > 1 ? '-' : ($inv['serial_number'] ?? '-')) ?></code></td>
                     <td><?= paymentMethodBadge($inv['payment_method'] ?? 'cash') ?></td>
+                    <td><?= invoicePaymentStatusBadge($inv) ?></td>
                     <td><?= formatMoney((float) $inv['total']) ?></td>
                     <td><?= formatDate($inv['created_at']) ?></td>
                     <td class="table-actions">
                         <a href="<?= url('invoices/preview.php?id=' . $inv['id']) ?>" class="btn btn-secondary btn-sm"><?= e(__('view')) ?></a>
                         <a href="<?= url('invoices/print.php?id=' . $inv['id']) ?>" class="btn btn-secondary btn-sm" target="_blank" rel="noopener"><?= e(__('print')) ?></a>
-                        <?php if (($inv['payment_method'] ?? '') === 'deferred' && ($inv['status'] ?? '') !== 'paid' && ($inv['invoice_type'] ?? 'sale') === 'sale'): ?>
-                        <a href="<?= url('invoices/index.php?pay=' . $inv['id']) ?>" class="btn btn-success btn-sm"><?= e(__('mark_paid')) ?></a>
+                        <?= invoiceWhatsAppButton((int) $inv['id'], $inv) ?>
+                        <?php if (invoiceAwaitingPayment($inv)): ?>
+                        <a href="<?= url('invoices/index.php?pay=' . $inv['id']) ?>" class="btn btn-success btn-sm" data-confirm="<?= e(__('confirm_mark_paid')) ?>"><?= e(__('mark_paid')) ?></a>
                         <?php endif; ?>
                         <?php if (canDelete()): ?>
                         <a href="<?= url('invoices/index.php?delete=' . $inv['id']) ?>" class="btn btn-danger btn-sm" data-confirm="<?= e(__('confirm_delete')) ?>"><?= e(__('delete')) ?></a>

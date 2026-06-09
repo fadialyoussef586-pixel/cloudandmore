@@ -22,6 +22,10 @@ function backupTableNames(): array
         'treasury_transactions',
         'cash_accounts',
         'exchange_rates',
+        'maintenance_tickets',
+        'current_account_movements',
+        'current_accounts',
+        'customer_ratings',
     ];
 }
 

@@ -97,6 +97,16 @@ $hasDiscount = (float) ($invoice['discount'] ?? 0) > 0;
             border-color: var(--line);
         }
 
+        .btn-whatsapp {
+            background: #25d366;
+            color: #fff;
+        }
+
+        .btn-whatsapp:hover {
+            background: #1fb855;
+            color: #fff;
+        }
+
         .print-card {
             max-width: 980px;
             margin: 0 auto;
@@ -196,7 +206,7 @@ $hasDiscount = (float) ($invoice['discount'] ?? 0) > 0;
 
         .meta-row-grid {
             display: grid;
-            grid-template-columns: repeat(3, minmax(0, 1fr));
+            grid-template-columns: repeat(2, minmax(0, 1fr));
             gap: 0.85rem;
         }
 
@@ -290,13 +300,28 @@ $hasDiscount = (float) ($invoice['discount'] ?? 0) > 0;
             border-top: 1px dashed var(--line);
             text-align: center;
             color: var(--muted);
+            font-size: 0.82rem;
+            line-height: 1.55;
         }
 
-        .footer strong {
+        .footer-title {
             display: block;
-            margin-bottom: 0.25rem;
+            margin-bottom: 0.35rem;
             color: var(--text);
             font-size: 1rem;
+            font-weight: 700;
+        }
+
+        .footer-tagline {
+            color: var(--accent-dark);
+            font-weight: 600;
+            margin-bottom: 0.35rem;
+        }
+
+        .footer-notice,
+        .footer-support {
+            max-width: 640px;
+            margin: 0.35rem auto 0;
         }
 
         @media (max-width: 768px) {
@@ -374,6 +399,7 @@ $hasDiscount = (float) ($invoice['discount'] ?? 0) > 0;
     <div class="print-shell">
         <div class="print-actions no-print">
             <a href="<?= url('invoices/preview.php?id=' . $id) ?>" class="btn btn-secondary"><?= e(__('view')) ?></a>
+            <?= invoiceWhatsAppButton($id, $invoice, $items, 'btn btn-whatsapp') ?>
             <button type="button" class="btn btn-primary" onclick="window.print(); return false;"><?= e(__('print')) ?></button>
         </div>
 
@@ -383,7 +409,7 @@ $hasDiscount = (float) ($invoice['discount'] ?? 0) > 0;
                     <img src="<?= e(companyLogoUrl()) ?>" alt="<?= e(COMPANY_NAME) ?>" class="print-logo">
                     <div>
                         <h1><?= e(COMPANY_NAME) ?></h1>
-                        <p>Cloud &amp; More</p>
+                        <p>Cloud &amp; More · <?= e(COMPANY_TAGLINE) ?></p>
                     </div>
                 </div>
                 <div class="print-total">
@@ -406,8 +432,12 @@ $hasDiscount = (float) ($invoice['discount'] ?? 0) > 0;
                                     <span class="value"><?= formatDate($invoice['created_at']) ?></span>
                                 </div>
                                 <div>
+                                    <span class="eyebrow"><?= e(__('invoice_type')) ?></span>
+                                    <span class="value"><?= e(invoiceTypeLabelEn($invoice['invoice_type'] ?? 'sale')) ?></span>
+                                </div>
+                                <div>
                                     <span class="eyebrow"><?= e(__('payment_method')) ?></span>
-                                    <span class="value"><?= e(paymentMethodLabel($invoice['payment_method'] ?? 'cash')) ?></span>
+                                    <span class="value"><?= e(paymentMethodLabelEn($invoice['payment_method'] ?? 'cash')) ?></span>
                                 </div>
                             </div>
                         </div>
@@ -452,6 +482,7 @@ $hasDiscount = (float) ($invoice['discount'] ?? 0) > 0;
                             <tr>
                                 <th>#</th>
                                 <th><?= e(__('product')) ?></th>
+                                <th><?= e(__('serial_number')) ?></th>
                                 <th class="num"><?= e(__('quantity')) ?></th>
                                 <th class="num"><?= e(__('price')) ?></th>
                                 <th class="num"><?= e(__('total')) ?></th>
@@ -462,6 +493,7 @@ $hasDiscount = (float) ($invoice['discount'] ?? 0) > 0;
                             <tr>
                                 <td><?= $index + 1 ?></td>
                                 <td><?= e($item['description']) ?></td>
+                                <td><?= e($item['serial_number'] ?? '-') ?></td>
                                 <td class="num"><?= (int) $item['quantity'] ?></td>
                                 <td class="num"><?= formatMoney((float) $item['unit_price']) ?></td>
                                 <td class="num"><?= formatMoney((float) $item['total']) ?></td>
@@ -471,25 +503,30 @@ $hasDiscount = (float) ($invoice['discount'] ?? 0) > 0;
                         <tfoot>
                             <?php if ($hasDiscount): ?>
                             <tr>
-                                <td colspan="4" class="total-label"><?= e(__('subtotal')) ?></td>
+                                <td colspan="5" class="total-label"><?= e(__('subtotal')) ?></td>
                                 <td class="num"><?= formatMoney((float) $invoice['subtotal']) ?></td>
                             </tr>
                             <tr>
-                                <td colspan="4" class="total-label"><?= e(__('discount')) ?></td>
+                                <td colspan="5" class="total-label"><?= e(__('discount')) ?></td>
                                 <td class="num"><?= formatMoney((float) $invoice['discount']) ?></td>
                             </tr>
                             <?php endif; ?>
                             <tr>
-                                <td colspan="4" class="total-label"><?= e(__('total')) ?></td>
+                                <td colspan="5" class="total-label"><?= e(__('total')) ?></td>
                                 <td class="num total-value"><?= formatMoney((float) $invoice['total']) ?></td>
                             </tr>
                         </tfoot>
                     </table>
                 </section>
 
+                <?php
+                $footer = invoiceProfessionalFooterLines((string) ($invoice['invoice_number'] ?? ''));
+                ?>
                 <footer class="footer">
-                    <strong><?= e(__('invoice_thanks')) ?></strong>
-                    <div><?= e(COMPANY_NAME) ?> · Cloud &amp; More</div>
+                    <span class="footer-title"><?= e($footer['title']) ?></span>
+                    <div class="footer-tagline"><?= e($footer['tagline']) ?></div>
+                    <div class="footer-notice"><?= e($footer['notice']) ?></div>
+                    <div class="footer-support"><?= e($footer['support']) ?></div>
                 </footer>
             </div>
         </article>

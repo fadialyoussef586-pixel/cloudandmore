@@ -35,7 +35,7 @@ if ($type === 'sales') {
                            JOIN customers c ON c.id = i.customer_id
                            WHERE DATE(i.created_at) BETWEEN ? AND ?
                              AND i.invoice_type = 'sale'
-                             AND i.status != 'cancelled'
+                             AND i.status = 'paid'
                            ORDER BY i.created_at DESC");
     $stmt->execute([$from, $to]);
     $sales = $stmt->fetchAll();
@@ -48,7 +48,7 @@ if ($type === 'sales') {
                            FROM invoices
                            WHERE DATE(created_at) BETWEEN ? AND ?
                              AND invoice_type = 'sale'
-                             AND status != 'cancelled'");
+                             AND status = 'paid'");
     $stmt->execute([$from, $to]);
     $salesSummary = $stmt->fetch() ?: $salesSummary;
 
@@ -58,7 +58,7 @@ if ($type === 'sales') {
                            FROM invoices
                            WHERE DATE(created_at) BETWEEN ? AND ?
                              AND invoice_type = 'sale'
-                             AND status != 'cancelled'
+                             AND status = 'paid'
                            GROUP BY payment_method
                            ORDER BY total DESC");
     $stmt->execute([$from, $to]);
@@ -71,7 +71,7 @@ if ($type === 'sales') {
                            JOIN invoices i ON i.id = ii.invoice_id
                            WHERE DATE(i.created_at) BETWEEN ? AND ?
                              AND i.invoice_type = 'sale'
-                             AND i.status != 'cancelled'
+                             AND i.status = 'paid'
                            GROUP BY ii.description
                            ORDER BY total_amount DESC, total_qty DESC
                            LIMIT 5");

@@ -6,6 +6,7 @@ requireAuth();
 requirePermission(PERM_INVOICES);
 
 ensureInvoiceSchema();
+ensureCustomerSchema();
 
 $pageTitle = __('create_invoice');
 $products = db()->query('SELECT id, sku, name_ar, name_en, sell_price FROM products ORDER BY name_en')->fetchAll();
@@ -47,6 +48,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $paymentMethod = normalizePaymentMethod($_POST['payment_method'] ?? 'cash');
         $customerName = trim($_POST['customer_name'] ?? '');
         $customerPhone = trim($_POST['customer_phone'] ?? '');
+        $customerEmail = trim($_POST['customer_email'] ?? '');
+        $customerAddress = trim($_POST['customer_address'] ?? '');
         $notes = trim($_POST['notes'] ?? '');
         $rawItems = is_array($_POST['items'] ?? null) ? $_POST['items'] : [];
         $lineItems = [];
@@ -59,6 +62,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
         if ($customerPhone === '') {
             throw new RuntimeException('customer_phone');
+        }
+
+        $existingCustomer = findCustomerByPhone($customerPhone);
+        if ($existingCustomer && (int) ($existingCustomer['is_blocked'] ?? 0) === 1) {
+            throw new RuntimeException('customer_blocked');
         }
 
         foreach ($rawItems as $row) {
@@ -120,7 +128,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         } else {
             $discount = max(0.0, round($listSubtotal - $finalTotal, 2));
             $totals = invoiceTotalsFromLines(max($listSubtotal, $finalTotal), $discount);
-            $invoiceStatus = $paymentMethod === 'deferred' ? 'sent' : 'paid';
+            $invoiceStatus = invoiceStatusForNewSale($paymentMethod);
         }
 
         // Prepare treasury tables before the write transaction so schema migrations
@@ -131,7 +139,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $transactionStarted = true;
 
         $invNum = generateNumber('INV');
-        $customerId = findOrCreateQuickCustomer($customerName, $customerPhone);
+        $customerId = findOrCreateCustomer($customerName, $customerPhone, $customerEmail, $customerAddress);
 
         $pdo->prepare(
             'INSERT INTO invoices (invoice_number, customer_id, subtotal, tax_rate, tax_amount, discount, total, status, payment_method, invoice_type, notes, user_id)
@@ -201,6 +209,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             'unit_price' => __('invoice_custom_price_required'),
             'customer_name' => __('customer_name_required'),
             'customer_phone' => __('customer_phone_required'),
+            'customer_blocked' => __('customer_blocked'),
         ];
         unset($cashBalanceNow);
         flash('error', $errors[$code] ?? __('error'));
@@ -247,16 +256,45 @@ require __DIR__ . '/../includes/header.php';
                 </p>
             </div>
 
+            <div class="form-group customer-search-wrap">
+                <label><?= e(__('cust_search_customer')) ?></label>
+                <input type="search" id="customerSearchInput" autocomplete="off"
+                    placeholder="<?= e(__('cust_search_placeholder')) ?>">
+                <p class="text-muted" style="margin-top:0.35rem;font-size:0.85rem"><?= e(__('cust_search_hint')) ?></p>
+                <div id="customerSearchResults" class="customer-search-results" hidden></div>
+            </div>
+
+            <div id="customerPreview" class="customer-preview card" hidden>
+                <div class="card-body">
+                    <div class="customer-preview-head">
+                        <strong id="customerPreviewTitle"><?= e(__('cust_profile_preview')) ?></strong>
+                        <a id="customerPreviewLink" href="#" class="btn btn-secondary btn-sm"><?= e(__('cust_view_profile')) ?></a>
+                    </div>
+                    <div id="customerPreviewStats" class="customer-preview-stats"></div>
+                </div>
+            </div>
+
             <div class="form-grid form-grid-2">
                 <div class="form-group">
                     <label><?= e(__('customer')) ?> *</label>
-                    <input type="text" name="customer_name" value="<?= e($_POST['customer_name'] ?? '') ?>"
+                    <input type="text" name="customer_name" id="customerNameInput" value="<?= e($_POST['customer_name'] ?? '') ?>"
                         placeholder="<?= e(__('customer_name_placeholder')) ?>" required>
                 </div>
                 <div class="form-group">
                     <label><?= e(__('phone')) ?> *</label>
-                    <input type="text" name="customer_phone" value="<?= e($_POST['customer_phone'] ?? '') ?>"
+                    <input type="text" name="customer_phone" id="customerPhoneInput" value="<?= e($_POST['customer_phone'] ?? '') ?>"
                         placeholder="05xxxxxxxx" required>
+                </div>
+            </div>
+
+            <div class="form-grid form-grid-2">
+                <div class="form-group">
+                    <label><?= e(__('email')) ?></label>
+                    <input type="email" name="customer_email" id="customerEmailInput" value="<?= e($_POST['customer_email'] ?? '') ?>">
+                </div>
+                <div class="form-group">
+                    <label><?= e(__('address')) ?></label>
+                    <input type="text" name="customer_address" id="customerAddressInput" value="<?= e($_POST['customer_address'] ?? '') ?>">
                 </div>
             </div>
 
@@ -264,22 +302,29 @@ require __DIR__ . '/../includes/header.php';
                 <div class="form-group">
                     <label><?= e(__('payment_method')) ?> *</label>
                     <div class="payment-options">
+                        <?php $selectedPayment = $_POST['payment_method'] ?? 'cash'; ?>
                         <label class="payment-option">
                             <input type="radio" name="payment_method" value="cash"
-                                <?= ($_POST['payment_method'] ?? 'cash') !== 'transfer' ? 'checked' : '' ?>>
+                                <?= $selectedPayment === 'cash' ? 'checked' : '' ?>>
                             <span><?= e(__('payment_cash')) ?></span>
                         </label>
                         <label class="payment-option">
                             <input type="radio" name="payment_method" value="transfer"
-                                <?= ($_POST['payment_method'] ?? '') === 'transfer' ? 'checked' : '' ?>>
+                                <?= $selectedPayment === 'transfer' ? 'checked' : '' ?>>
                             <span><?= e(__('payment_transfer')) ?></span>
                         </label>
                         <label class="payment-option">
+                            <input type="radio" name="payment_method" value="pending"
+                                <?= $selectedPayment === 'pending' ? 'checked' : '' ?>>
+                            <span><?= e(__('payment_pending')) ?></span>
+                        </label>
+                        <label class="payment-option">
                             <input type="radio" name="payment_method" value="deferred"
-                                <?= ($_POST['payment_method'] ?? '') === 'deferred' ? 'checked' : '' ?>>
+                                <?= $selectedPayment === 'deferred' ? 'checked' : '' ?>>
                             <span><?= e(__('payment_deferred')) ?></span>
                         </label>
                     </div>
+                    <p class="text-muted" style="margin-top:0.5rem;font-size:0.85rem"><?= e(__('payment_pending_hint')) ?></p>
                 </div>
                 <div class="form-group">
                     <label><?= e(__('notes')) ?></label>
@@ -528,7 +573,7 @@ require __DIR__ . '/../includes/header.php';
     unit_price: <?= json_encode($defaultProductPrice) ?>
   }]).forEach(createRow);
 
-  invoiceTypeInputs.forEach(function (input) {
+    invoiceTypeInputs.forEach(function (input) {
     input.addEventListener('change', function () {
       if (giftInvoiceHint) {
         giftInvoiceHint.style.display = currentInvoiceType() === 'gift' ? '' : 'none';
@@ -537,6 +582,147 @@ require __DIR__ . '/../includes/header.php';
       updateSummary();
     });
   });
+
+  const customerSearchInput = document.getElementById('customerSearchInput');
+  const customerSearchResults = document.getElementById('customerSearchResults');
+  const customerPreview = document.getElementById('customerPreview');
+  const customerPreviewStats = document.getElementById('customerPreviewStats');
+  const customerPreviewLink = document.getElementById('customerPreviewLink');
+  const customerNameInput = document.getElementById('customerNameInput');
+  const customerPhoneInput = document.getElementById('customerPhoneInput');
+  const customerEmailInput = document.getElementById('customerEmailInput');
+  const customerAddressInput = document.getElementById('customerAddressInput');
+  const customerSearchUrl = <?= json_encode(url('customers/search.php')) ?>;
+  let customerSearchTimer = null;
+
+  function renderCustomerPreview(customer) {
+    if (!customerPreview || !customerPreviewStats) {
+      return;
+    }
+    if (!customer || !customer.id) {
+      customerPreview.hidden = true;
+      return;
+    }
+
+    customerPreview.hidden = false;
+    if (customerPreviewLink) {
+      customerPreviewLink.href = customer.profile_url || '#';
+    }
+
+    const blocked = customer.is_blocked ? '<span class="badge badge-red"><?= e(__('cust_blocked')) ?></span>' : '';
+    const outstanding = Number(customer.outstanding || 0) > 0
+      ? '<strong class="text-warning">' + formatMoneyValue(customer.outstanding) + '</strong>'
+      : formatMoneyValue(0);
+
+    customerPreviewStats.innerHTML =
+      '<div class="customer-preview-stat"><span><?= e(__('cust_existing_customer')) ?></span><strong>' + (customer.name || '') + '</strong></div>' +
+      '<div class="customer-preview-stat"><span><?= e(__('cust_total_spent')) ?></span><strong>' + formatMoneyValue(customer.total_spent) + '</strong></div>' +
+      '<div class="customer-preview-stat"><span><?= e(__('cust_outstanding')) ?></span>' + outstanding + '</div>' +
+      '<div class="customer-preview-stat"><span><?= e(__('invoices')) ?></span><strong>' + (customer.invoice_count || 0) + '</strong></div>' +
+      '<div class="customer-preview-stat"><span><?= e(__('cust_rating')) ?></span><strong>' + (customer.rating_count > 0 ? customer.rating_avg + '/5' : '—') + '</strong></div>' +
+      blocked;
+  }
+
+  function applyCustomer(customer) {
+    if (!customer) {
+      return;
+    }
+    if (customerNameInput) customerNameInput.value = customer.name || '';
+    if (customerPhoneInput) customerPhoneInput.value = customer.phone || '';
+    if (customerEmailInput && customer.email) customerEmailInput.value = customer.email;
+    if (customerAddressInput && customer.address) customerAddressInput.value = customer.address;
+    renderCustomerPreview(customer);
+    if (customerSearchResults) {
+      customerSearchResults.hidden = true;
+      customerSearchResults.innerHTML = '';
+    }
+    if (customerSearchInput) {
+      customerSearchInput.value = '';
+    }
+  }
+
+  function searchCustomers(query) {
+    if (!customerSearchResults || query.length < 2) {
+      if (customerSearchResults) {
+        customerSearchResults.hidden = true;
+        customerSearchResults.innerHTML = '';
+      }
+      return;
+    }
+
+    fetch(customerSearchUrl + '?q=' + encodeURIComponent(query), {
+      headers: { 'Accept': 'application/json' }
+    })
+      .then(function (response) { return response.json(); })
+      .then(function (payload) {
+        const results = payload.results || [];
+        if (!results.length) {
+          customerSearchResults.hidden = true;
+          customerSearchResults.innerHTML = '';
+          return;
+        }
+
+        customerSearchResults.innerHTML = results.map(function (item) {
+          return '<button type="button" class="customer-search-item" data-customer="' +
+            encodeURIComponent(JSON.stringify(item)) + '">' +
+            '<strong>' + item.name + '</strong>' +
+            '<span>' + (item.phone || '') + '</span>' +
+            '<small>' + formatMoneyValue(item.total_spent) + ' · ' + (item.invoice_count || 0) + ' <?= e(__('invoices')) ?></small>' +
+            '</button>';
+        }).join('');
+        customerSearchResults.hidden = false;
+      })
+      .catch(function () {
+        customerSearchResults.hidden = true;
+      });
+  }
+
+  if (customerSearchInput) {
+    customerSearchInput.addEventListener('input', function () {
+      clearTimeout(customerSearchTimer);
+      customerSearchTimer = setTimeout(function () {
+        searchCustomers(customerSearchInput.value.trim());
+      }, 250);
+    });
+  }
+
+  if (customerSearchResults) {
+    customerSearchResults.addEventListener('click', function (event) {
+      const button = event.target.closest('.customer-search-item');
+      if (!button) {
+        return;
+      }
+      try {
+        applyCustomer(JSON.parse(decodeURIComponent(button.getAttribute('data-customer') || '')));
+      } catch (error) {
+        /* ignore malformed payload */
+      }
+    });
+  }
+
+  if (customerPhoneInput) {
+    customerPhoneInput.addEventListener('blur', function () {
+      const phone = customerPhoneInput.value.trim();
+      if (phone.length < 6) {
+        return;
+      }
+      fetch(customerSearchUrl + '?q=' + encodeURIComponent(phone), {
+        headers: { 'Accept': 'application/json' }
+      })
+        .then(function (response) { return response.json(); })
+        .then(function (payload) {
+          const match = (payload.results || []).find(function (item) {
+            return (item.phone || '') === phone;
+          }) || (payload.results || [])[0];
+          if (match) {
+            renderCustomerPreview(match);
+          } else {
+            renderCustomerPreview(null);
+          }
+        })
+        .catch(function () {});
+    });
+  }
 })();
 </script>
 <?php require __DIR__ . '/../includes/footer.php'; ?>
