@@ -446,3 +446,8 @@ function invoiceWhatsAppButton(int $invoiceId, ?array $invoice = null, ?array $i
         . '</a>';
 }
 
+function renderInvoiceItemsTable(array $items, array $invoice, string $wrapClass = 'invoice-print-table-wrap'): void
+{
+    include BASE_PATH . '/includes/partials/invoice_items_table.php';
+}
+

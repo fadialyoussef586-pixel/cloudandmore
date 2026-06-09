@@ -246,11 +246,16 @@ $hasDiscount = (float) ($invoice['discount'] ?? 0) > 0;
             color: var(--text);
         }
 
-        .items-wrap {
+        .items-wrap,
+        .invoice-print-table-wrap {
             border: 1px solid var(--line);
             border-radius: 22px;
             overflow: hidden;
             background: #fff;
+        }
+
+        .items-wrap .invoice-print-table {
+            width: 100%;
         }
 
         table {
@@ -326,44 +331,151 @@ $hasDiscount = (float) ($invoice['discount'] ?? 0) > 0;
 
         @media (max-width: 768px) {
             .print-shell {
-                padding: 1rem 0.65rem;
+                padding: 0.65rem 0.45rem;
             }
 
             .print-actions {
                 justify-content: stretch;
+                display: grid;
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+                gap: 0.45rem;
             }
 
             .print-actions .btn {
-                flex: 1 1 0;
+                flex: 1 1 auto;
+                width: 100%;
+                min-height: 42px;
+                font-size: 0.82rem;
+            }
+
+            .print-actions .btn-whatsapp,
+            .print-actions .btn-primary {
+                grid-column: 1 / -1;
+            }
+
+            .print-card {
+                border-radius: 18px;
             }
 
             .print-hero,
             .meta-grid {
-                grid-template-columns: 1fr;
                 flex-direction: column;
             }
 
-            .print-body {
+            .print-hero {
                 padding: 1rem;
+                gap: 0.85rem;
+            }
+
+            .print-logo {
+                width: 52px;
+                height: 52px;
+            }
+
+            .print-brand h1 {
+                font-size: 1.15rem;
+            }
+
+            .print-brand p {
+                font-size: 0.78rem;
+            }
+
+            .print-total {
+                width: 100%;
+                min-width: 0;
+                text-align: start;
+            }
+
+            .print-total strong {
+                font-size: 1.45rem;
+            }
+
+            .print-body {
+                padding: 0.75rem;
+            }
+
+            .summary-grid {
+                display: none;
             }
 
             .meta-row-grid {
-                grid-template-columns: 1fr;
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+                gap: 0.55rem;
             }
 
-            th, td {
-                padding: 0.75rem 0.8rem;
+            .items-wrap,
+            .invoice-print-table-wrap {
+                border: none;
+                background: transparent;
+                overflow: visible;
+            }
+
+            .invoice-print-table thead {
+                display: none;
+            }
+
+            .invoice-print-table tbody tr {
+                display: block;
+                margin-bottom: 0.65rem;
+                border: 1px solid var(--line);
+                border-radius: 14px;
+                background: #fff;
+                overflow: hidden;
+            }
+
+            .invoice-print-table tbody td {
+                display: flex;
+                justify-content: space-between;
+                gap: 0.75rem;
+                padding: 0.45rem 0.75rem;
+                border-bottom: 1px solid var(--line);
+                font-size: 0.84rem;
+            }
+
+            .invoice-print-table tbody td::before {
+                content: attr(data-label);
+                font-weight: 700;
+                color: var(--muted);
+            }
+
+            .invoice-print-table tbody td:first-child {
+                display: none;
+            }
+
+            .invoice-print-table tfoot {
+                display: block;
+                border: 1px solid var(--line);
+                border-radius: 14px;
+                background: #fff;
+            }
+
+            .invoice-print-table tfoot .invoice-tfoot-row {
+                display: flex;
+                justify-content: space-between;
+                padding: 0.55rem 0.75rem;
+                border-bottom: 1px solid var(--line);
+            }
+
+            .invoice-print-table tfoot td[colspan] {
+                display: none;
+            }
+
+            .footer {
+                font-size: 0.76rem;
+                margin-top: 0.75rem;
+                padding-top: 0.65rem;
             }
         }
 
         @media print {
             @page {
-                margin: 12mm;
-                size: auto;
+                margin: 5mm;
+                size: A4 portrait;
             }
 
             body {
                 background: #fff;
+                font-size: 9pt;
             }
 
             .no-print {
@@ -383,14 +495,99 @@ $hasDiscount = (float) ($invoice['discount'] ?? 0) > 0;
 
             .print-hero {
                 break-inside: avoid;
+                padding: 3mm 4mm 2mm;
+                color: #000;
+                background: #fff;
+                border-bottom: 1px solid var(--line);
+            }
+
+            .print-logo {
+                width: 12mm;
+                height: 12mm;
+            }
+
+            .print-brand h1 {
+                font-size: 11pt;
+            }
+
+            .print-brand p,
+            .summary-grid {
+                display: none !important;
+            }
+
+            .print-total strong {
+                font-size: 12pt;
+            }
+
+            .print-body {
+                padding: 2mm 4mm 3mm;
+            }
+
+            .meta-grid {
+                grid-template-columns: 1fr 0.9fr;
+                gap: 2mm;
+                margin-bottom: 2mm;
+            }
+
+            .meta-row,
+            .customer-box {
+                padding: 2mm 3mm;
+                border-radius: 6px;
+            }
+
+            .eyebrow {
+                font-size: 7pt;
+            }
+
+            .value {
+                font-size: 8.5pt;
             }
 
             .items-wrap,
             .meta-row,
             .customer-box,
-            .summary-box,
             .notes-box {
                 box-shadow: none;
+            }
+
+            .invoice-print-table thead {
+                display: table-header-group;
+            }
+
+            .invoice-print-table tbody tr,
+            .invoice-print-table tbody td,
+            .invoice-print-table tfoot tr,
+            .invoice-print-table tfoot td {
+                display: table-row;
+            }
+
+            .invoice-print-table tbody td,
+            .invoice-print-table tfoot td {
+                display: table-cell;
+            }
+
+            .invoice-print-table tbody td::before {
+                content: none;
+            }
+
+            .invoice-print-table tbody td:first-child {
+                display: table-cell;
+            }
+
+            th, td {
+                padding: 1mm 1.5mm;
+                font-size: 8pt;
+            }
+
+            .footer {
+                margin-top: 2mm;
+                padding-top: 2mm;
+                font-size: 7pt;
+                line-height: 1.35;
+            }
+
+            .footer-title {
+                font-size: 8pt;
             }
         }
     </style>
@@ -476,48 +673,7 @@ $hasDiscount = (float) ($invoice['discount'] ?? 0) > 0;
                 </section>
                 <?php endif; ?>
 
-                <section class="items-wrap">
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>#</th>
-                                <th><?= e(__('product')) ?></th>
-                                <th><?= e(__('serial_number')) ?></th>
-                                <th class="num"><?= e(__('quantity')) ?></th>
-                                <th class="num"><?= e(__('price')) ?></th>
-                                <th class="num"><?= e(__('total')) ?></th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <?php foreach ($items as $index => $item): ?>
-                            <tr>
-                                <td><?= $index + 1 ?></td>
-                                <td><?= e($item['description']) ?></td>
-                                <td><?= e($item['serial_number'] ?? '-') ?></td>
-                                <td class="num"><?= (int) $item['quantity'] ?></td>
-                                <td class="num"><?= formatMoney((float) $item['unit_price']) ?></td>
-                                <td class="num"><?= formatMoney((float) $item['total']) ?></td>
-                            </tr>
-                            <?php endforeach; ?>
-                        </tbody>
-                        <tfoot>
-                            <?php if ($hasDiscount): ?>
-                            <tr>
-                                <td colspan="5" class="total-label"><?= e(__('subtotal')) ?></td>
-                                <td class="num"><?= formatMoney((float) $invoice['subtotal']) ?></td>
-                            </tr>
-                            <tr>
-                                <td colspan="5" class="total-label"><?= e(__('discount')) ?></td>
-                                <td class="num"><?= formatMoney((float) $invoice['discount']) ?></td>
-                            </tr>
-                            <?php endif; ?>
-                            <tr>
-                                <td colspan="5" class="total-label"><?= e(__('total')) ?></td>
-                                <td class="num total-value"><?= formatMoney((float) $invoice['total']) ?></td>
-                            </tr>
-                        </tfoot>
-                    </table>
-                </section>
+                <?php renderInvoiceItemsTable($items, $invoice, 'items-wrap'); ?>
 
                 <?php
                 $footer = invoiceProfessionalFooterLines((string) ($invoice['invoice_number'] ?? ''));

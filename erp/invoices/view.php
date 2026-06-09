@@ -182,48 +182,7 @@ require __DIR__ . '/../includes/header.php';
     </section>
     <?php endif; ?>
 
-    <div class="invoice-print-table-wrap">
-        <table class="invoice-print-table">
-            <thead>
-                <tr>
-                    <th>#</th>
-                    <th><?= e(__('product')) ?></th>
-                    <th><?= e(__('serial_number')) ?></th>
-                    <th class="num"><?= e(__('quantity')) ?></th>
-                    <th class="num"><?= e(__('price')) ?></th>
-                    <th class="num"><?= e(__('total')) ?></th>
-                </tr>
-            </thead>
-            <tbody>
-                <?php foreach ($items as $i => $row): ?>
-                <tr>
-                    <td><?= $i + 1 ?></td>
-                    <td><?= e($row['description']) ?></td>
-                    <td><code class="serial-code"><?= e($row['serial_number'] ?? '-') ?></code></td>
-                    <td class="num"><?= (int) $row['quantity'] ?></td>
-                    <td class="num"><?= formatMoney((float) $row['unit_price']) ?></td>
-                    <td class="num"><?= formatMoney((float) $row['total']) ?></td>
-                </tr>
-                <?php endforeach; ?>
-            </tbody>
-            <tfoot>
-                <?php if ($hasDiscount): ?>
-                <tr>
-                    <td colspan="5" class="invoice-total-label"><?= e(__('subtotal')) ?></td>
-                    <td class="num"><?= formatMoney((float) $invoice['subtotal']) ?></td>
-                </tr>
-                <tr>
-                    <td colspan="5" class="invoice-total-label"><?= e(__('discount')) ?></td>
-                    <td class="num"><?= formatMoney((float) $invoice['discount']) ?></td>
-                </tr>
-                <?php endif; ?>
-                <tr>
-                    <td colspan="5" class="invoice-total-label"><?= e(__('total')) ?></td>
-                    <td class="num invoice-total-value"><?= formatMoney((float) $invoice['total']) ?></td>
-                </tr>
-            </tfoot>
-        </table>
-    </div>
+    <?php renderInvoiceItemsTable($items, $invoice); ?>
 
     <footer class="invoice-print-footer">
         <?php
