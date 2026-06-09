@@ -22,9 +22,6 @@ function backupTableNames(): array
         'treasury_transactions',
         'cash_accounts',
         'exchange_rates',
-        'gold_prices',
-        'gold_predictions',
-        'gold_alerts',
     ];
 }
 

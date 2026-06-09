@@ -20,11 +20,6 @@ try {
     runSqlFile($pdo, __DIR__ . '/database/migrate_invoice_returns.sql');
     runSqlFile($pdo, __DIR__ . '/database/migrate_purchases.sql');
 
-    $migrateGold = __DIR__ . '/database/migrate_gold_trading.sql';
-    if (is_file($migrateGold)) {
-        runSqlFile($pdo, $migrateGold);
-    }
-
     $migratePerm = __DIR__ . '/database/migrate_permissions.sql';
     if (is_file($migratePerm)) {
         runSqlFile($pdo, $migratePerm);
