@@ -50,6 +50,11 @@ try {
         runSqlFile($pdo, $migratePath);
     }
 
+    $migrateShopEnhanced = __DIR__ . '/database/migrate_shop_enhanced.sql';
+    if (is_file($migrateShopEnhanced)) {
+        runSqlFile($pdo, $migrateShopEnhanced);
+    }
+
     ensureOwnerAccount($pdo);
     removeDemoUsers($pdo);
 

@@ -8,7 +8,14 @@ $pageTitle = __('add_product');
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $sku = trim($_POST['sku']);
-    $name = trim($_POST['name'] ?? '');
+    $nameAr = trim($_POST['name_ar'] ?? $_POST['name'] ?? '');
+    $nameEn = trim($_POST['name_en'] ?? $_POST['name'] ?? '');
+    $descAr = trim($_POST['description_ar'] ?? '');
+    $descEn = trim($_POST['description_en'] ?? '');
+    if ($nameAr === '' && $nameEn === '') {
+        flash('error', __('product_name_required'));
+        redirect(url('inventory/add.php'));
+    }
     $category = resolveProductCategoryFromPost($_POST);
     if ($category === '') {
         flash('error', __('category_required'));
@@ -17,8 +24,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $image = saveProductImage($_FILES['image'] ?? [], $sku);
     $stmt = db()->prepare('INSERT INTO products (sku, name_ar, name_en, description_ar, description_en, category, unit, quantity, min_stock, cost_price, sell_price, image, is_published) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)');
     $stmt->execute([
-        $sku, $name, $name,
-        '', '',
+        $sku, $nameAr, $nameEn, $descAr, $descEn,
         $category, trim($_POST['unit'] ?? 'piece'),
         (int) ($_POST['quantity'] ?? 0), (int) ($_POST['min_stock'] ?? 5),
         (float) ($_POST['cost_price'] ?? 0), (float) ($_POST['sell_price'] ?? 0),
@@ -35,7 +41,10 @@ $existingCategories = productCategories();
 <form method="post" enctype="multipart/form-data">
 <div class="form-grid">
     <div class="form-group"><label><?= e(__('sku')) ?></label><input name="sku" value="<?= e($_POST['sku'] ?? '') ?>" required></div>
-    <div class="form-group"><label><?= e(__('product_name')) ?></label><input name="name" value="<?= e($_POST['name'] ?? '') ?>" required></div>
+    <div class="form-group"><label><?= e(__('name_ar')) ?></label><input name="name_ar" value="<?= e($_POST['name_ar'] ?? '') ?>"></div>
+    <div class="form-group"><label><?= e(__('name_en')) ?></label><input name="name_en" value="<?= e($_POST['name_en'] ?? '') ?>"></div>
+    <div class="form-group" style="grid-column:1/-1"><label><?= e(__('description_ar')) ?></label><textarea name="description_ar" rows="3"><?= e($_POST['description_ar'] ?? '') ?></textarea></div>
+    <div class="form-group" style="grid-column:1/-1"><label><?= e(__('description_en')) ?></label><textarea name="description_en" rows="3"><?= e($_POST['description_en'] ?? '') ?></textarea></div>
     <div class="form-group" style="grid-column:1/-1">
         <label><?= e(__('category')) ?> *</label>
         <?php if ($existingCategories !== []): ?>

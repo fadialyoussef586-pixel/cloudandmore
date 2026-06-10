@@ -88,3 +88,16 @@ if (!defined('WHATSAPP_DEFAULT_COUNTRY')) {
 if (!defined('COMPANY_SUPPORT_PHONE')) {
     define('COMPANY_SUPPORT_PHONE', appEnv('COMPANY_SUPPORT_PHONE', '', true));
 }
+
+if (!defined('SHOP_DELIVERY_FEE')) {
+    define('SHOP_DELIVERY_FEE', (float) appEnv('SHOP_DELIVERY_FEE', '5'));
+}
+if (!defined('SHOP_FREE_DELIVERY_MIN')) {
+    define('SHOP_FREE_DELIVERY_MIN', (float) appEnv('SHOP_FREE_DELIVERY_MIN', '50'));
+}
+if (!defined('SHOP_HOURS')) {
+    define('SHOP_HOURS', appEnv('SHOP_HOURS', '10:00 - 22:00'));
+}
+if (!defined('SHOP_ORDER_ALERT_PHONE')) {
+    define('SHOP_ORDER_ALERT_PHONE', appEnv('SHOP_ORDER_ALERT_PHONE', COMPANY_SUPPORT_PHONE, true));
+}

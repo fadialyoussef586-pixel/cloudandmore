@@ -16,16 +16,23 @@ $pageTitle = __('edit');
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $sku = trim($_POST['sku']);
-    $name = trim($_POST['name'] ?? '');
+    $nameAr = trim($_POST['name_ar'] ?? '');
+    $nameEn = trim($_POST['name_en'] ?? '');
+    $descAr = trim($_POST['description_ar'] ?? '');
+    $descEn = trim($_POST['description_en'] ?? '');
+    if ($nameAr === '' && $nameEn === '') {
+        flash('error', __('product_name_required'));
+        redirect(url('inventory/edit.php?id=' . $id));
+    }
     $category = resolveProductCategoryFromPost($_POST);
     if ($category === '') {
         flash('error', __('category_required'));
         redirect(url('inventory/edit.php?id=' . $id));
     }
     $image = saveProductImage($_FILES['image'] ?? [], $sku) ?: $product['image'];
-    $stmt = db()->prepare('UPDATE products SET sku=?, name_ar=?, name_en=?, category=?, unit=?, min_stock=?, cost_price=?, sell_price=?, image=?, is_published=? WHERE id=?');
+    $stmt = db()->prepare('UPDATE products SET sku=?, name_ar=?, name_en=?, description_ar=?, description_en=?, category=?, unit=?, min_stock=?, cost_price=?, sell_price=?, image=?, is_published=? WHERE id=?');
     $stmt->execute([
-        $sku, $name, $name,
+        $sku, $nameAr, $nameEn, $descAr, $descEn,
         $category, trim($_POST['unit'] ?? 'piece'),
         (int) ($_POST['min_stock'] ?? 5), (float) ($_POST['cost_price'] ?? 0),
         (float) ($_POST['sell_price'] ?? 0), $image,
@@ -47,7 +54,10 @@ $categoryInList = $currentCategory !== '' && isset($existingCategories[$currentC
         <img src="<?= productImageUrl($product) ?>" alt="" style="width:120px;height:120px;object-fit:cover;border-radius:8px;border:1px solid var(--border)">
     </p>
     <div class="form-group"><label><?= e(__('sku')) ?></label><input name="sku" value="<?= e($product['sku']) ?>" required></div>
-    <div class="form-group"><label><?= e(__('product_name')) ?></label><input name="name" value="<?= e(productName($product)) ?>" required></div>
+    <div class="form-group"><label><?= e(__('name_ar')) ?></label><input name="name_ar" value="<?= e($product['name_ar']) ?>"></div>
+    <div class="form-group"><label><?= e(__('name_en')) ?></label><input name="name_en" value="<?= e($product['name_en']) ?>"></div>
+    <div class="form-group" style="grid-column:1/-1"><label><?= e(__('description_ar')) ?></label><textarea name="description_ar" rows="3"><?= e($product['description_ar'] ?? '') ?></textarea></div>
+    <div class="form-group" style="grid-column:1/-1"><label><?= e(__('description_en')) ?></label><textarea name="description_en" rows="3"><?= e($product['description_en'] ?? '') ?></textarea></div>
     <div class="form-group" style="grid-column:1/-1">
         <label><?= e(__('category')) ?> *</label>
         <?php if ($existingCategories !== []): ?>

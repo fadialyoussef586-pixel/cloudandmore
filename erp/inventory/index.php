@@ -55,6 +55,7 @@ require __DIR__ . '/../includes/header.php';
                         <th><?= e(__('category')) ?></th>
                         <th><?= e(__('quantity')) ?></th>
                         <th><?= e(__('sell_price')) ?></th>
+                        <th><?= e(__('published')) ?></th>
                         <th><?= e(__('actions')) ?></th>
                     </tr>
                 </thead>
@@ -68,8 +69,12 @@ require __DIR__ . '/../includes/header.php';
                                 <?= (int) $product['quantity'] ?> <?= e($product['unit']) ?>
                             </td>
                             <td><?= formatMoney((float) $product['sell_price']) ?></td>
+                            <td><?= !empty($product['is_published']) && (int)$product['quantity'] > 0 ? '<span class="badge badge-green">' . e(__('published')) . '</span>' : '<span class="badge badge-gray">' . e(__('hidden')) . '</span>' ?></td>
                             <td>
                                 <a href="<?= url('inventory/edit.php?id=' . $product['id']) ?>" class="btn btn-secondary btn-sm"><?= e(__('edit')) ?></a>
+                                <?php if (!empty($product['is_published']) && (int)$product['quantity'] > 0): ?>
+                                <a href="<?= shopUrl('product.php?id=' . $product['id']) ?>" class="btn btn-secondary btn-sm" target="_blank" rel="noopener"><?= e(__('view_on_shop')) ?></a>
+                                <?php endif; ?>
                                 <a href="<?= url('inventory/movement.php?product_id=' . $product['id']) ?>" class="btn btn-secondary btn-sm"><?= e(__('movements')) ?></a>
                                 <?php if (canDelete()): ?>
                                 <a href="<?= url('inventory/index.php?delete=' . $product['id']) ?>" class="btn btn-danger btn-sm" data-confirm="<?= e(__('confirm_delete')) ?>"><?= e(__('delete')) ?></a>
