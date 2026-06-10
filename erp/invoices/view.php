@@ -56,15 +56,13 @@ if (!$invoice) {
     redirect(url('invoices/index.php'));
 }
 
-$items = db()->prepare('SELECT * FROM invoice_items WHERE invoice_id = ?');
-$items->execute([$id]);
-$items = $items->fetchAll();
+$invoiceItems = fetchInvoiceItems($id);
 $returnHistory = invoiceReturnHistory($id);
 $allProducts = db()->query('SELECT id, sku, name_ar, name_en, sell_price, quantity FROM products ORDER BY name_en')->fetchAll();
 $remainingQtyByItem = [];
-$itemCount = count($items);
+$itemCount = count($invoiceItems);
 $totalQuantity = 0;
-foreach ($items as $row) {
+foreach ($invoiceItems as $row) {
     $remainingQtyByItem[(int) $row['id']] = invoiceItemRemainingQty($row);
     $totalQuantity += (int) ($row['quantity'] ?? 0);
 }
@@ -91,7 +89,7 @@ require __DIR__ . '/../includes/header.php';
     <a href="<?= url('invoices/index.php?delete=' . $id) ?>" class="btn btn-danger" data-confirm="<?= e(__('confirm_delete')) ?>"><?= e(__('delete')) ?></a>
     <?php endif; ?>
     <a href="<?= url('invoices/print.php?id=' . $id) ?>" class="btn btn-secondary" target="_blank" rel="noopener"><?= e(__('print')) ?></a>
-    <?= invoiceWhatsAppButton($id, $invoice, $items, 'btn btn-whatsapp') ?>
+    <?= invoiceWhatsAppButton($id, $invoice, $invoiceItems, 'btn btn-whatsapp') ?>
 </div>
 
 <article class="invoice-print card">
@@ -182,7 +180,7 @@ require __DIR__ . '/../includes/header.php';
     </section>
     <?php endif; ?>
 
-    <?php renderInvoiceItemsTable($items, $invoice); ?>
+    <?php renderInvoiceItemsTable($invoiceItems, $invoice); ?>
 
     <footer class="invoice-print-footer">
         <?php
@@ -205,18 +203,18 @@ require __DIR__ . '/../includes/header.php';
 <section class="card no-print" style="margin-top:1rem">
     <div class="card-header"><h2><?= e(__('returns_and_exchanges')) ?></h2></div>
     <div class="card-body">
-        <?php if (empty($items)): ?>
+        <?php if (empty($invoiceItems)): ?>
             <p class="text-muted"><?= e(__('no_data')) ?></p>
         <?php else: ?>
             <div class="grid-2">
-                <?php foreach ($items as $row): ?>
+                <?php foreach ($invoiceItems as $row): ?>
                     <?php $remainingQty = $remainingQtyByItem[(int) $row['id']] ?? 0; ?>
                     <form method="post" class="card return-form-card" style="margin-bottom:1rem">
                         <div class="card-body">
                             <input type="hidden" name="process_return" value="1">
                             <input type="hidden" name="invoice_item_id" value="<?= (int) $row['id'] ?>">
 
-                            <p><strong><?= e(__('product')) ?>:</strong> <?= e($row['description']) ?></p>
+                            <p><strong><?= e(__('product')) ?>:</strong> <?= e(invoiceItemDescription($row)) ?></p>
                             <p><strong><?= e(__('serial_number')) ?>:</strong> <code class="serial-code"><?= e($row['serial_number'] ?? '-') ?></code></p>
                             <p><strong><?= e(__('quantity_sold')) ?>:</strong> <?= (int) $row['quantity'] ?> | <strong><?= e(__('remaining_return_qty')) ?>:</strong> <?= $remainingQty ?></p>
 

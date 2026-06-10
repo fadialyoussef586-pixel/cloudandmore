@@ -365,7 +365,7 @@ function buildInvoiceWhatsAppMessage(array $invoice, array $items, string $custo
     ];
 
     foreach ($items as $index => $item) {
-        $desc = trim((string) ($item['description'] ?? ''));
+        $desc = invoiceItemDescription($item);
         $serial = trim((string) ($item['serial_number'] ?? ''));
         $lineTotal = formatMoneyPlain((float) ($item['total'] ?? 0));
         $line = ($index + 1) . '. ' . $desc;
@@ -417,9 +417,7 @@ function invoiceWhatsAppLinkFor(int $invoiceId, ?array $invoice = null, ?array $
     }
 
     if ($items === null) {
-        $itemsStmt = db()->prepare('SELECT * FROM invoice_items WHERE invoice_id = ? ORDER BY id ASC');
-        $itemsStmt->execute([$invoiceId]);
-        $items = $itemsStmt->fetchAll(PDO::FETCH_ASSOC);
+        $items = fetchInvoiceItems($invoiceId);
     }
 
     $name = $customerName ?? trim((string) ($invoice['customer_name'] ?? ''));
@@ -444,6 +442,36 @@ function invoiceWhatsAppButton(int $invoiceId, ?array $invoice = null, ?array $i
         . faIcon('fa-brands fa-whatsapp', 'fa-btn-icon')
         . e(__('send_whatsapp'))
         . '</a>';
+}
+
+function invoiceItemDescription(array $item): string
+{
+    $description = trim((string) ($item['description'] ?? $item['product_name'] ?? ''));
+    if ($description !== '') {
+        return $description;
+    }
+
+    if (!empty($item['name_ar']) || !empty($item['name_en'])) {
+        return productName($item);
+    }
+
+    return '-';
+}
+
+function fetchInvoiceItems(int $invoiceId): array
+{
+    $stmt = db()->prepare(
+        'SELECT ii.*,
+                p.name_ar, p.name_en, p.sku,
+                COALESCE(NULLIF(TRIM(ii.description), \'\'), NULLIF(TRIM(p.name_en), \'\'), NULLIF(TRIM(p.name_ar), \'\'), p.sku, \'-\') AS product_name
+         FROM invoice_items ii
+         LEFT JOIN products p ON p.id = ii.product_id
+         WHERE ii.invoice_id = ?
+         ORDER BY ii.id ASC'
+    );
+    $stmt->execute([$invoiceId]);
+
+    return $stmt->fetchAll(PDO::FETCH_ASSOC);
 }
 
 function renderInvoiceItemsTable(array $items, array $invoice, string $wrapClass = 'invoice-print-table-wrap'): void

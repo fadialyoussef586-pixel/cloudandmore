@@ -21,11 +21,11 @@ $wrapClass = $wrapClass ?? 'invoice-print-table-wrap';
             <?php foreach ($items as $index => $item): ?>
                 <tr>
                     <td data-label="#"><?= $index + 1 ?></td>
-                    <td data-label="<?= e(__('product')) ?>"><?= e($item['description']) ?></td>
+                    <td data-label="<?= e(__('product')) ?>"><?= e(invoiceItemDescription($item)) ?></td>
                     <td data-label="<?= e(__('serial_number')) ?>"><code class="serial-code"><?= e($item['serial_number'] ?? '-') ?></code></td>
-                    <td class="num" data-label="<?= e(__('quantity')) ?>"><?= (int) $item['quantity'] ?></td>
-                    <td class="num" data-label="<?= e(__('price')) ?>"><?= formatMoney((float) $item['unit_price']) ?></td>
-                    <td class="num" data-label="<?= e(__('total')) ?>"><?= formatMoney((float) $item['total']) ?></td>
+                    <td class="num" data-label="<?= e(__('quantity')) ?>"><?= (int) ($item['quantity'] ?? 0) ?></td>
+                    <td class="num" data-label="<?= e(__('price')) ?>"><?= formatMoney((float) ($item['unit_price'] ?? 0)) ?></td>
+                    <td class="num" data-label="<?= e(__('total')) ?>"><?= formatMoney((float) ($item['total'] ?? 0)) ?></td>
                 </tr>
             <?php endforeach; ?>
         </tbody>

@@ -21,13 +21,11 @@ if (!$invoice) {
     redirect(url('invoices/index.php'));
 }
 
-$itemsStmt = db()->prepare('SELECT * FROM invoice_items WHERE invoice_id = ? ORDER BY id ASC');
-$itemsStmt->execute([$id]);
-$items = $itemsStmt->fetchAll();
+$invoiceItems = fetchInvoiceItems($id);
 
-$itemCount = count($items);
+$itemCount = count($invoiceItems);
 $totalQuantity = 0;
-foreach ($items as $item) {
+foreach ($invoiceItems as $item) {
     $totalQuantity += (int) ($item['quantity'] ?? 0);
 }
 
@@ -143,7 +141,7 @@ require __DIR__ . '/../includes/header.php';
     </section>
     <?php endif; ?>
 
-    <?php renderInvoiceItemsTable($items, $invoice); ?>
+    <?php renderInvoiceItemsTable($invoiceItems, $invoice); ?>
 
     <footer class="invoice-print-footer">
         <?php

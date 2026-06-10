@@ -21,9 +21,7 @@ if (!$invoice) {
     redirect(url('invoices/index.php'));
 }
 
-$itemsStmt = db()->prepare('SELECT * FROM invoice_items WHERE invoice_id = ? ORDER BY id ASC');
-$itemsStmt->execute([$id]);
-$items = $itemsStmt->fetchAll();
+$invoiceItems = fetchInvoiceItems($id);
 
 $customerName = trim((string) ($invoice['customer_name'] ?? ''));
 if ($customerName === '') {
@@ -596,7 +594,7 @@ $hasDiscount = (float) ($invoice['discount'] ?? 0) > 0;
     <div class="print-shell">
         <div class="print-actions no-print">
             <a href="<?= url('invoices/preview.php?id=' . $id) ?>" class="btn btn-secondary"><?= e(__('view')) ?></a>
-            <?= invoiceWhatsAppButton($id, $invoice, $items, 'btn btn-whatsapp') ?>
+            <?= invoiceWhatsAppButton($id, $invoice, $invoiceItems, 'btn btn-whatsapp') ?>
             <button type="button" class="btn btn-primary" onclick="window.print(); return false;"><?= e(__('print')) ?></button>
         </div>
 
@@ -673,7 +671,7 @@ $hasDiscount = (float) ($invoice['discount'] ?? 0) > 0;
                 </section>
                 <?php endif; ?>
 
-                <?php renderInvoiceItemsTable($items, $invoice, 'items-wrap'); ?>
+                <?php renderInvoiceItemsTable($invoiceItems, $invoice, 'items-wrap'); ?>
 
                 <?php
                 $footer = invoiceProfessionalFooterLines((string) ($invoice['invoice_number'] ?? ''));

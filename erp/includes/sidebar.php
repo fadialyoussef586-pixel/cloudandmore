@@ -91,13 +91,13 @@ $footerLinks = [
             <span class="sidebar-section-title"><?= e(__('navigation')) ?></span>
             <?php foreach ($navGroups as $index => $group): ?>
                 <?php
-                $items = $filterVisible($group['items']);
-                if ($items === []) {
+                $navGroupItems = $filterVisible($group['items']);
+                if ($navGroupItems === []) {
                     continue;
                 }
                 $groupId = 'sidebar-group-' . $index;
                 $groupActive = false;
-                foreach ($items as $child) {
+                foreach ($navGroupItems as $child) {
                     if ($isItemActive($child)) {
                         $groupActive = true;
                         break;
@@ -117,7 +117,7 @@ $footerLinks = [
                         <span class="nav-caret"><?= faIcon('fa-solid fa-chevron-down', 'fa-nav-caret') ?></span>
                     </button>
                     <div class="nav-group-links" id="<?= e($groupId) ?>">
-                        <?php foreach ($items as $child): ?>
+                        <?php foreach ($navGroupItems as $child): ?>
                             <?php $isActive = $isItemActive($child); ?>
                             <a
                                 href="<?= url($child['path']) ?>"
