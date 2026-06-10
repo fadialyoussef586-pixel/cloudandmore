@@ -105,7 +105,7 @@ function treasuryBalanceFromDb(PDO $pdo): float
 {
     try {
         if (databaseTableExists($pdo, 'cash_accounts')) {
-            $stmt = $pdo->query('SELECT balance FROM cash_accounts WHERE id = 1 LIMIT 1');
+            $stmt = $pdo->query('SELECT COALESCE(SUM(balance), 0) FROM cash_accounts');
             $balance = $stmt ? $stmt->fetchColumn() : 0;
 
             return round((float) $balance, 2);

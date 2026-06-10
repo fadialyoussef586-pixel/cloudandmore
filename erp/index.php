@@ -10,6 +10,7 @@ $pdo = db();
 $invoiceCount = (int) $pdo->query('SELECT COUNT(*) FROM invoices')->fetchColumn();
 $cashRowCount = (int) $pdo->query('SELECT COUNT(*) FROM treasury_transactions')->fetchColumn();
 $cashBalance = cashAccountBalance($pdo);
+$reserveBalance = cashAccountBalance($pdo, CASH_ACCOUNT_RESERVE);
 
 $pageTitle = __('dashboard');
 
@@ -21,6 +22,7 @@ $stats = [
     'deliveries' => (int) $pdo->query("SELECT COUNT(*) FROM deliveries WHERE status IN ('pending','in_transit')")->fetchColumn(),
     'employees' => (int) $pdo->query("SELECT COUNT(*) FROM employees WHERE status = 'active'")->fetchColumn(),
     'cash' => $cashBalance,
+    'reserve' => $reserveBalance,
     'cash_rows' => $cashRowCount,
 ];
 
@@ -73,8 +75,12 @@ require __DIR__ . '/includes/header.php';
     </div>
     <?php if (can(PERM_TREASURY)): ?>
     <div class="stat-card primary">
-        <div class="label"><?= e(__('treasury_balance')) ?></div>
+        <div class="label"><?= e(__('main_treasury_balance')) ?></div>
         <div class="value" id="dashboard-cash" style="font-size:1.1rem"><?= formatMoney($stats['cash']) ?></div>
+    </div>
+    <div class="stat-card success">
+        <div class="label"><?= e(__('reserve_treasury_balance')) ?></div>
+        <div class="value" id="dashboard-reserve" style="font-size:1.1rem"><?= formatMoney($stats['reserve']) ?></div>
     </div>
     <?php endif; ?>
 </div>
@@ -155,6 +161,7 @@ require __DIR__ . '/includes/header.php';
 <?php if (can(PERM_TREASURY)): ?>
 (function () {
   var fallbackMoney = <?= json_encode(formatMoney($stats['cash']), JSON_UNESCAPED_UNICODE) ?>;
+  var fallbackReserve = <?= json_encode(formatMoney($stats['reserve']), JSON_UNESCAPED_UNICODE) ?>;
   fetch('<?= url('api/dashboard-stats.php') ?>?_=' + Date.now(), { credentials: 'same-origin', cache: 'no-store' })
     .then(function (r) {
       if (!r.ok) throw new Error('dashboard-stats request failed');
@@ -162,11 +169,15 @@ require __DIR__ . '/includes/header.php';
     })
     .then(function (d) {
       var cash = document.getElementById('dashboard-cash');
+      var reserve = document.getElementById('dashboard-reserve');
       if (cash) cash.textContent = d.cash_display || d.treasury_display || fallbackMoney;
+      if (reserve) reserve.textContent = d.reserve_display || fallbackReserve;
     })
     .catch(function () {
       var cash = document.getElementById('dashboard-cash');
+      var reserve = document.getElementById('dashboard-reserve');
       if (cash) cash.textContent = fallbackMoney;
+      if (reserve) reserve.textContent = fallbackReserve;
     });
 })();
 <?php endif; ?>

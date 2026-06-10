@@ -16,11 +16,14 @@ if (can(PERM_TREASURY) || can(PERM_REPORTS)) {
     $invoiceCount = (int) db()->query('SELECT COUNT(*) FROM invoices')->fetchColumn();
     $cashMovementCount = (int) db()->query('SELECT COUNT(*) FROM treasury_transactions')->fetchColumn();
     $cashBalance = cashAccountBalance();
+    $reserveBalance = reserveTreasuryBalance();
     $payload += [
         'invoices' => $invoiceCount,
         'cash_rows' => $cashMovementCount,
         'cash_balance' => $cashBalance,
         'cash_display' => formatMoney($cashBalance),
+        'reserve_balance' => $reserveBalance,
+        'reserve_display' => formatMoney($reserveBalance),
         'treasury_rows' => $cashMovementCount,
         'treasury_display' => formatMoney($cashBalance),
     ];
