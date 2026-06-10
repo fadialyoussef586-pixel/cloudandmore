@@ -43,7 +43,7 @@ require __DIR__ . '/../includes/header.php';
     <a href="<?= url('invoices/index.php') ?>" class="btn btn-secondary"><?= e(__('cancel')) ?></a>
     <a href="<?= url('invoices/create.php') ?>" class="btn btn-primary"><?= e(__('new_sale')) ?></a>
     <a href="<?= url('invoices/print.php?id=' . $id) ?>" class="btn btn-secondary" target="_blank" rel="noopener"><?= e(__('print')) ?></a>
-    <?= invoiceWhatsAppButton($id, $invoice, $items, 'btn btn-whatsapp') ?>
+    <?= invoiceWhatsAppButton($id, $invoice, $invoiceItems, 'btn btn-whatsapp') ?>
     <a href="<?= url('invoices/view.php?id=' . $id) ?>" class="btn btn-secondary"><?= e(__('returns_and_exchanges')) ?></a>
     <?php if (!empty($invoice['customer_id']) && can(PERM_CUSTOMERS)): ?>
         <a href="<?= url('customers/view.php?id=' . (int) $invoice['customer_id']) ?>" class="btn btn-secondary"><?= e(__('cust_view_profile')) ?></a>

@@ -651,7 +651,7 @@ $hasDiscount = (float) ($invoice['discount'] ?? 0) > 0;
                 <section class="summary-grid">
                     <div class="summary-box">
                         <span class="eyebrow"><?= e(__('items')) ?></span>
-                        <span class="value"><?= count($items) ?></span>
+                        <span class="value"><?= count($invoiceItems) ?></span>
                     </div>
                     <div class="summary-box">
                         <span class="eyebrow"><?= e(__('subtotal')) ?></span>
