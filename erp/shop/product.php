@@ -6,10 +6,32 @@ $stmt->execute([$id]);
 $product = $stmt->fetch();
 if (!$product) { redirect(shopUrl()); }
 $pageTitle = productName($product);
+$gallery = productImageUrlsForProduct($id, $product);
 require __DIR__ . '/includes/header.php';
 ?>
 <div class="product-detail">
-  <img src="<?= productImageUrl($product) ?>" alt="<?= e(productName($product)) ?>">
+  <div class="product-gallery">
+    <img
+      id="productMainImage"
+      src="<?= e($gallery[0]['url'] ?? productImageUrl($product)) ?>"
+      alt="<?= e(productName($product)) ?>"
+      class="product-gallery-main"
+    >
+    <?php if (count($gallery) > 1): ?>
+    <div class="product-gallery-thumbs" role="tablist" aria-label="<?= e(__('product_images')) ?>">
+      <?php foreach ($gallery as $index => $image): ?>
+      <button
+        type="button"
+        class="product-gallery-thumb<?= $index === 0 ? ' active' : '' ?>"
+        data-image="<?= e($image['url']) ?>"
+        aria-label="<?= e(__('product_image')) ?> <?= $index + 1 ?>"
+      >
+        <img src="<?= e($image['url']) ?>" alt="">
+      </button>
+      <?php endforeach; ?>
+    </div>
+    <?php endif; ?>
+  </div>
   <div>
     <h1><?= e(productName($product)) ?></h1>
     <p class="text-muted"><?= e($product['sku']) ?> · <?= e($product['category']) ?></p>
@@ -25,4 +47,22 @@ require __DIR__ . '/includes/header.php';
     </form>
   </div>
 </div>
+<?php if (count($gallery) > 1): ?>
+<script>
+(function () {
+  var main = document.getElementById('productMainImage');
+  document.querySelectorAll('.product-gallery-thumb').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      var src = btn.getAttribute('data-image');
+      if (!main || !src) return;
+      main.src = src;
+      document.querySelectorAll('.product-gallery-thumb').forEach(function (el) {
+        el.classList.remove('active');
+      });
+      btn.classList.add('active');
+    });
+  });
+})();
+</script>
+<?php endif; ?>
 <?php require __DIR__ . '/includes/footer.php'; ?>

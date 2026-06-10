@@ -2400,3 +2400,29 @@ body.sidebar-collapsed .nav-item::before {
   color: var(--warning);
 }
 
+.product-admin-gallery {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.product-admin-gallery-item {
+  width: 140px;
+  display: grid;
+  gap: 0.45rem;
+  justify-items: start;
+}
+
+.product-admin-gallery-item img {
+  width: 140px;
+  height: 140px;
+  object-fit: cover;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+}
+
+.product-admin-gallery-item .btn-sm {
+  width: 100%;
+  justify-content: center;
+}
+

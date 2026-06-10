@@ -21,17 +21,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         flash('error', __('category_required'));
         redirect(url('inventory/add.php'));
     }
-    $image = saveProductImage($_FILES['image'] ?? [], $sku);
+
     $stmt = db()->prepare('INSERT INTO products (sku, name_ar, name_en, description_ar, description_en, category, unit, quantity, min_stock, cost_price, sell_price, image, is_published) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)');
     $stmt->execute([
         $sku, $nameAr, $nameEn, $descAr, $descEn,
         $category, trim($_POST['unit'] ?? 'piece'),
         (int) ($_POST['quantity'] ?? 0), (int) ($_POST['min_stock'] ?? 5),
         (float) ($_POST['cost_price'] ?? 0), (float) ($_POST['sell_price'] ?? 0),
-        $image, isset($_POST['is_published']) ? 1 : 0,
+        null, isset($_POST['is_published']) ? 1 : 0,
     ]);
+    $productId = dbLastInsertId(db());
+
+    $uploads = $_FILES['images'] ?? [];
+    addProductImagesFromUploads($uploads, $sku, $productId);
+
     flash('success', __('success_saved'));
-    redirect(url('inventory/index.php'));
+    redirect(url('inventory/edit.php?id=' . $productId));
 }
 
 require __DIR__ . '/../includes/header.php';
@@ -58,7 +63,11 @@ $existingCategories = productCategories();
         <?php endif; ?>
         <input name="custom_category" value="<?= e($_POST['custom_category'] ?? '') ?>" placeholder="<?= e(__('custom_category_placeholder')) ?>" <?= $existingCategories === [] ? 'required' : '' ?>>
     </div>
-    <div class="form-group"><label><?= e(__('product_image')) ?></label><input type="file" name="image" accept="image/*"></div>
+    <div class="form-group" style="grid-column:1/-1">
+        <label><?= e(__('product_images')) ?></label>
+        <input type="file" name="images[]" accept="image/jpeg,image/png,image/webp" multiple>
+        <p class="text-muted" style="margin-top:0.35rem;font-size:0.85rem"><?= e(__('product_images_hint')) ?></p>
+    </div>
     <div class="form-group"><label><?= e(__('unit')) ?></label><input name="unit" value="<?= e($_POST['unit'] ?? 'piece') ?>"></div>
     <div class="form-group"><label><?= e(__('quantity')) ?></label><input type="number" name="quantity" value="<?= e($_POST['quantity'] ?? '0') ?>" min="0"></div>
     <div class="form-group"><label><?= e(__('min_stock')) ?></label><input type="number" name="min_stock" value="<?= e($_POST['min_stock'] ?? '5') ?>" min="0"></div>

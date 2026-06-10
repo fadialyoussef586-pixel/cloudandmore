@@ -55,6 +55,11 @@ try {
         runSqlFile($pdo, $migrateShopEnhanced);
     }
 
+    $migrateProductImages = __DIR__ . '/database/migrate_product_images.sql';
+    if (is_file($migrateProductImages)) {
+        runSqlFile($pdo, $migrateProductImages);
+    }
+
     ensureOwnerAccount($pdo);
     removeDemoUsers($pdo);
 

@@ -5,6 +5,7 @@ function backupTableNames(): array
     return [
         'users',
         'products',
+        'product_images',
         'customers',
         'invoices',
         'invoice_items',

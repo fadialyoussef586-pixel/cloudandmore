@@ -102,19 +102,141 @@ function productDescription(array $product): string
     return $desc;
 }
 
-function productImageUrl(?array $product): string
+function ensureProductImagesSchema(): void
 {
-    if (!empty($product['image'])) {
-        $file = BASE_PATH . '/uploads/products/' . $product['image'];
-        if (is_file($file)) {
-            return url('uploads/products/' . rawurlencode($product['image']));
-        }
+    static $done = false;
+    if ($done) {
+        return;
+    }
+
+    $pdo = db();
+    $path = BASE_PATH . '/database/migrate_product_images.sql';
+    if (is_file($path)) {
+        runSqlFile($pdo, $path);
+    }
+
+    $pdo->exec(
+        'CREATE TABLE IF NOT EXISTS product_images (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            product_id INT NOT NULL,
+            filename VARCHAR(255) NOT NULL,
+            sort_order INT NOT NULL DEFAULT 0,
+            is_primary TINYINT(1) NOT NULL DEFAULT 0,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE,
+            INDEX idx_product_images_product (product_id)
+        )'
+    );
+
+    migrateLegacyProductImages($pdo);
+    $done = true;
+}
+
+function migrateLegacyProductImages(?PDO $pdo = null): void
+{
+    $pdo = $pdo ?: db();
+    $rows = $pdo->query(
+        "SELECT p.id, p.image
+         FROM products p
+         WHERE p.image IS NOT NULL AND TRIM(p.image) <> ''
+           AND NOT EXISTS (SELECT 1 FROM product_images pi WHERE pi.product_id = p.id)"
+    )->fetchAll(PDO::FETCH_ASSOC);
+
+    $insert = $pdo->prepare(
+        'INSERT INTO product_images (product_id, filename, sort_order, is_primary) VALUES (?,?,?,1)'
+    );
+    foreach ($rows as $row) {
+        $insert->execute([(int) $row['id'], $row['image'], 0]);
+    }
+}
+
+function productImages(int $productId): array
+{
+    ensureProductImagesSchema();
+
+    $stmt = db()->prepare(
+        'SELECT * FROM product_images WHERE product_id = ? ORDER BY is_primary DESC, sort_order ASC, id ASC'
+    );
+    $stmt->execute([$productId]);
+
+    return $stmt->fetchAll(PDO::FETCH_ASSOC);
+}
+
+function productImageFilenameUrl(string $filename): string
+{
+    $file = BASE_PATH . '/uploads/products/' . $filename;
+    if ($filename !== '' && is_file($file)) {
+        return url('uploads/products/' . rawurlencode($filename));
     }
 
     return asset('img/product-placeholder.svg');
 }
 
-function saveProductImage(array $file, string $sku): ?string
+function productImageUrl(?array $product): string
+{
+    if (!empty($product['id'])) {
+        $images = productImages((int) $product['id']);
+        if ($images !== []) {
+            return productImageFilenameUrl((string) $images[0]['filename']);
+        }
+    }
+
+    if (!empty($product['image'])) {
+        return productImageFilenameUrl((string) $product['image']);
+    }
+
+    return asset('img/product-placeholder.svg');
+}
+
+function productImageUrlsForProduct(int $productId, ?array $product = null): array
+{
+    $urls = [];
+    foreach (productImages($productId) as $row) {
+        $urls[] = [
+            'id' => (int) $row['id'],
+            'url' => productImageFilenameUrl((string) $row['filename']),
+            'filename' => (string) $row['filename'],
+            'is_primary' => !empty($row['is_primary']),
+        ];
+    }
+
+    if ($urls === [] && $product !== null && !empty($product['image'])) {
+        $urls[] = [
+            'id' => 0,
+            'url' => productImageFilenameUrl((string) $product['image']),
+            'filename' => (string) $product['image'],
+            'is_primary' => true,
+        ];
+    }
+
+    return $urls;
+}
+
+function normalizeUploadedFilesArray(array $files): array
+{
+    if (!isset($files['name']) || !is_array($files['name'])) {
+        if (($files['error'] ?? UPLOAD_ERR_NO_FILE) === UPLOAD_ERR_NO_FILE) {
+            return [];
+        }
+
+        return [$files];
+    }
+
+    $normalized = [];
+    foreach ($files['name'] as $index => $name) {
+        $normalized[] = [
+            'name' => $name,
+            'type' => $files['type'][$index] ?? '',
+            'tmp_name' => $files['tmp_name'][$index] ?? '',
+            'error' => $files['error'][$index] ?? UPLOAD_ERR_NO_FILE,
+            'size' => $files['size'][$index] ?? 0,
+        ];
+    }
+
+    return $normalized;
+}
+
+function saveProductImage(array $file, string $sku, ?int $suffix = null): ?string
 {
     if (($file['error'] ?? UPLOAD_ERR_NO_FILE) === UPLOAD_ERR_NO_FILE) {
         return null;
@@ -134,12 +256,117 @@ function saveProductImage(array $file, string $sku): ?string
         mkdir($dir, 0755, true);
     }
 
-    $filename = preg_replace('/[^a-zA-Z0-9_-]/', '', $sku) . '_' . time() . '.' . $allowed[$mime];
+    $safeSku = preg_replace('/[^a-zA-Z0-9_-]/', '', $sku);
+    $unique = $suffix !== null ? $suffix : (time() . '_' . bin2hex(random_bytes(3)));
+    $filename = $safeSku . '_' . $unique . '.' . $allowed[$mime];
     if (move_uploaded_file($file['tmp_name'], $dir . '/' . $filename)) {
         return $filename;
     }
 
     return null;
+}
+
+function syncProductCoverImage(int $productId, ?PDO $pdo = null): void
+{
+    ensureProductImagesSchema();
+    $pdo = $pdo ?: db();
+
+    $stmt = $pdo->prepare(
+        'SELECT filename FROM product_images WHERE product_id = ? ORDER BY is_primary DESC, sort_order ASC, id ASC LIMIT 1'
+    );
+    $stmt->execute([$productId]);
+    $filename = $stmt->fetchColumn();
+
+    $pdo->prepare('UPDATE products SET image = ? WHERE id = ?')->execute([
+        $filename !== false && $filename !== '' ? $filename : null,
+        $productId,
+    ]);
+}
+
+function addProductImagesFromUploads(array $files, string $sku, int $productId, ?PDO $pdo = null): int
+{
+    ensureProductImagesSchema();
+    $pdo = $pdo ?: db();
+    $uploads = normalizeUploadedFilesArray($files);
+    if ($uploads === []) {
+        return 0;
+    }
+
+    $countStmt = $pdo->prepare('SELECT COUNT(*) FROM product_images WHERE product_id = ?');
+    $countStmt->execute([$productId]);
+    $existingCount = (int) $countStmt->fetchColumn();
+
+    $insert = $pdo->prepare(
+        'INSERT INTO product_images (product_id, filename, sort_order, is_primary) VALUES (?,?,?,?)'
+    );
+
+    $added = 0;
+    foreach ($uploads as $index => $file) {
+        $filename = saveProductImage($file, $sku, time() . '_' . ($existingCount + $index));
+        if ($filename === null) {
+            continue;
+        }
+
+        $isPrimary = ($existingCount + $added) === 0 ? 1 : 0;
+        $insert->execute([$productId, $filename, $existingCount + $added, $isPrimary]);
+        $added++;
+    }
+
+    if ($added > 0) {
+        syncProductCoverImage($productId, $pdo);
+    }
+
+    return $added;
+}
+
+function deleteProductImage(int $imageId, int $productId): void
+{
+    ensureProductImagesSchema();
+    $pdo = db();
+
+    $stmt = $pdo->prepare('SELECT * FROM product_images WHERE id = ? AND product_id = ?');
+    $stmt->execute([$imageId, $productId]);
+    $row = $stmt->fetch(PDO::FETCH_ASSOC);
+    if (!$row) {
+        return;
+    }
+
+    $wasPrimary = !empty($row['is_primary']);
+    $path = BASE_PATH . '/uploads/products/' . $row['filename'];
+    if (is_file($path)) {
+        @unlink($path);
+    }
+
+    $pdo->prepare('DELETE FROM product_images WHERE id = ?')->execute([$imageId]);
+
+    if ($wasPrimary) {
+        $next = $pdo->prepare('SELECT id FROM product_images WHERE product_id = ? ORDER BY sort_order ASC, id ASC LIMIT 1');
+        $next->execute([$productId]);
+        $nextId = (int) $next->fetchColumn();
+        if ($nextId > 0) {
+            setPrimaryProductImage($nextId, $productId);
+        } else {
+            syncProductCoverImage($productId, $pdo);
+        }
+    } else {
+        syncProductCoverImage($productId, $pdo);
+    }
+}
+
+function setPrimaryProductImage(int $imageId, int $productId): void
+{
+    ensureProductImagesSchema();
+    $pdo = db();
+
+    $stmt = $pdo->prepare('SELECT id FROM product_images WHERE id = ? AND product_id = ?');
+    $stmt->execute([$imageId, $productId]);
+    if (!$stmt->fetchColumn()) {
+        return;
+    }
+
+    $pdo->prepare('UPDATE product_images SET is_primary = 0 WHERE product_id = ?')->execute([$productId]);
+    $pdo->prepare('UPDATE product_images SET is_primary = 1 WHERE id = ?')->execute([$imageId]);
+    syncProductCoverImage($productId, $pdo);
 }
 
 function publishedProductsQuery(): string

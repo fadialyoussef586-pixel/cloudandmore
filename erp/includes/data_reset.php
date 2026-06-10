@@ -23,6 +23,7 @@ function businessDataTables(): array
         'invoice_items',
         'invoices',
         'stock_movements',
+        'product_images',
         'products',
         'customers',
         'payroll',
