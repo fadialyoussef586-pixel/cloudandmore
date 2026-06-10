@@ -45,13 +45,16 @@ require __DIR__ . '/../includes/header.php';
 <?php if ($order['status']==='new' && canAccessOrders()): ?>
 <a href="<?= url('orders/sales.php?confirm='.$id) ?>" class="btn btn-success" data-confirm="<?= e(__('confirm_order')) ?>"><?= e(__('confirm_order')) ?></a>
 <?php endif; ?>
-<?php if ($order['status']==='confirmed' && canAccessOrders()): ?>
+<?php if ($order['status']==='confirmed' && canAccessOrders() && orderNeedsDelivery($order)): ?>
 <a href="<?= url('orders/sales.php?send_delivery='.$id) ?>" class="btn btn-primary"><?= e(__('send_to_delivery')) ?></a>
+<?php endif; ?>
+<?php if ($order['status']==='confirmed' && canAccessOrders() && ($order['payment_method'] ?? '') === 'pickup'): ?>
+<a href="<?= url('orders/sales.php?pickup_complete='.$id) ?>" class="btn btn-success" data-confirm="<?= e(__('confirm_pickup_complete')) ?>"><?= e(__('mark_pickup_complete')) ?></a>
 <?php endif; ?>
 <?php if (!in_array($order['status'], ['delivered', 'cancelled'], true) && canAccessOrders()): ?>
 <a href="<?= url('orders/view.php?id='.$id.'&cancel=1') ?>" class="btn btn-danger" data-confirm="<?= e(__('confirm_cancel_order')) ?>"><?= e(__('cancel_order')) ?></a>
 <?php endif; ?>
-<?php if (empty($order['invoice_id']) && can(PERM_INVOICES)): ?>
+<?php if (empty($order['invoice_id']) && can(PERM_INVOICES) && orderStockWasDeducted((string) $order['status'])): ?>
 <a href="<?= url('orders/view.php?id='.$id.'&create_invoice=1') ?>" class="btn btn-secondary"><?= e(__('create_invoice_from_order')) ?></a>
 <?php endif; ?>
 <?php if (!empty($order['invoice_id']) && can(PERM_INVOICES)): ?>

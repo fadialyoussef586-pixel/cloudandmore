@@ -6,11 +6,16 @@ requireRole(['driver', 'admin', 'manager']);
 
 if (isset($_GET['accept'])) {
     $id = (int)$_GET['accept'];
-    db()->prepare("UPDATE orders SET status='out_for_delivery', delivery_user_id=? WHERE id=? AND status='ready_for_delivery'")
-        ->execute([$_SESSION['user_id'], $id]);
-    db()->prepare("UPDATE deliveries SET status='in_transit', driver_name=? WHERE order_id=?")
-        ->execute([$_SESSION['user_name'] ?? 'Driver', $id]);
-    flash('success', __('success_saved'));
+    $userId = (int) ($_SESSION['user_id'] ?? 0);
+    $stmt = db()->prepare("UPDATE orders SET status='out_for_delivery', delivery_user_id=? WHERE id=? AND status='ready_for_delivery'");
+    $stmt->execute([$userId, $id]);
+    if ($stmt->rowCount() === 1) {
+        db()->prepare("UPDATE deliveries SET status='in_transit', driver_name=? WHERE order_id=?")
+            ->execute([$_SESSION['user_name'] ?? 'Driver', $id]);
+        flash('success', __('success_saved'));
+    } else {
+        flash('error', __('error'));
+    }
     redirect(url('driver/index.php'));
 }
 if (isset($_GET['complete'])) {

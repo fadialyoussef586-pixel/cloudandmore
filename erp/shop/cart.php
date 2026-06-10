@@ -43,6 +43,7 @@ $flash = getFlash();
 <?php else: ?>
 <form method="post">
 <input type="hidden" name="action" value="update">
+<div class="table-wrap">
 <table class="cart-table">
 <thead><tr><th></th><th><?= e(__('product')) ?></th><th><?= e(__('price')) ?></th><th><?= e(__('quantity')) ?></th><th><?= e(__('total')) ?></th><th></th></tr></thead>
 <tbody>
@@ -57,6 +58,7 @@ $flash = getFlash();
 </tr>
 <?php endforeach; ?>
 </tbody></table>
+</div>
 <div class="cart-summary">
   <p><span><?= e(__('subtotal')) ?></span><strong><?= formatMoney($subtotal) ?></strong></p>
   <p><span><?= e(__('delivery_fee')) ?></span><strong><?= $deliveryFee > 0 ? formatMoney($deliveryFee) : e(__('shop_free_delivery')) ?></strong></p>

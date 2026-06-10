@@ -47,6 +47,7 @@ function completeLogin(array $user): void
     $_SESSION['user_name'] = $user['name'];
     $_SESSION['user_role'] = $user['role'];
     syncUserPermissionsToSession($user);
+    session_regenerate_id(true);
 }
 
 function login(string $email, string $password): bool

@@ -555,12 +555,33 @@ function deductOrderStock(int $orderId, ?PDO $pdo = null): void
     $pdo = $pdo ?: db();
     $items = $pdo->prepare('SELECT product_id, quantity FROM order_items WHERE order_id = ? AND product_id IS NOT NULL');
     $items->execute([$orderId]);
+    $update = $pdo->prepare('UPDATE products SET quantity = quantity - ? WHERE id = ? AND quantity >= ?');
     foreach ($items->fetchAll() as $item) {
         $qty = (int) $item['quantity'];
         $productId = (int) $item['product_id'];
-        $pdo->prepare('UPDATE products SET quantity = quantity - ? WHERE id = ? AND quantity >= ?')
-            ->execute([$qty, $productId, $qty]);
+        $update->execute([$qty, $productId, $qty]);
+        if ($update->rowCount() !== 1) {
+            throw new RuntimeException('insufficient_stock');
+        }
     }
+}
+
+function markOrderPickupComplete(int $orderId, ?PDO $pdo = null): void
+{
+    $pdo = $pdo ?: db();
+    $stmt = $pdo->prepare(
+        "UPDATE orders SET status = 'delivered', delivered_at = NOW()
+         WHERE id = ? AND status = 'confirmed' AND payment_method = 'pickup'"
+    );
+    $stmt->execute([$orderId]);
+    if ($stmt->rowCount() !== 1) {
+        throw new RuntimeException('order_not_found');
+    }
+}
+
+function orderNeedsDelivery(array $order): bool
+{
+    return ($order['payment_method'] ?? 'cod') !== 'pickup';
 }
 
 function cancelOrder(int $orderId, ?int $userId = null, ?PDO $pdo = null): void
@@ -636,6 +657,10 @@ function createInvoiceFromOrder(int $orderId, ?int $userId = null, ?PDO $pdo = n
             }
 
             return (int) $order['invoice_id'];
+        }
+
+        if (!orderStockWasDeducted((string) ($order['status'] ?? ''))) {
+            throw new RuntimeException('order_not_confirmed');
         }
 
         $itemsStmt = $pdo->prepare('SELECT * FROM order_items WHERE order_id = ? ORDER BY id ASC');
@@ -843,7 +868,7 @@ function createDeliveryFromOrder(int $orderId, int $userId): void
     $order = db()->prepare('SELECT * FROM orders WHERE id = ?');
     $order->execute([$orderId]);
     $order = $order->fetch();
-    if (!$order) {
+    if (!$order || !orderNeedsDelivery($order)) {
         return;
     }
 

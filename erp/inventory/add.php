@@ -23,13 +23,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     $stmt = db()->prepare('INSERT INTO products (sku, name_ar, name_en, description_ar, description_en, category, unit, quantity, min_stock, cost_price, sell_price, image, is_published) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)');
-    $stmt->execute([
-        $sku, $nameAr, $nameEn, $descAr, $descEn,
-        $category, trim($_POST['unit'] ?? 'piece'),
-        (int) ($_POST['quantity'] ?? 0), (int) ($_POST['min_stock'] ?? 5),
-        (float) ($_POST['cost_price'] ?? 0), (float) ($_POST['sell_price'] ?? 0),
-        null, isset($_POST['is_published']) ? 1 : 0,
-    ]);
+    try {
+        $stmt->execute([
+            $sku, $nameAr, $nameEn, $descAr, $descEn,
+            $category, trim($_POST['unit'] ?? 'piece'),
+            (int) ($_POST['quantity'] ?? 0), (int) ($_POST['min_stock'] ?? 5),
+            (float) ($_POST['cost_price'] ?? 0), (float) ($_POST['sell_price'] ?? 0),
+            null, isset($_POST['is_published']) ? 1 : 0,
+        ]);
+    } catch (PDOException $e) {
+        if (str_contains($e->getMessage(), 'Duplicate') || str_contains($e->getMessage(), 'duplicate')) {
+            flash('error', __('duplicate_sku'));
+            redirect(url('inventory/add.php'));
+        }
+        throw $e;
+    }
     $productId = dbLastInsertId(db());
 
     $uploads = $_FILES['images'] ?? [];

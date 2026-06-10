@@ -52,6 +52,7 @@ if (isset($_GET['delete'])) {
         }
 
         $pdo->prepare('DELETE FROM invoices WHERE id = ?')->execute([$id]);
+        $pdo->prepare('UPDATE orders SET invoice_id = NULL WHERE invoice_id = ?')->execute([$id]);
         $pdo->commit();
         flash('success', __('success_deleted'));
     } catch (Throwable $e) {

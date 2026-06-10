@@ -6,8 +6,29 @@ requirePermission(PERM_DELIVERY);
 
 $id = (int) ($_GET['id'] ?? 0);
 if (isset($_GET['action']) && $_GET['action'] === 'deliver') {
-    db()->prepare("UPDATE deliveries SET status = 'delivered', delivered_at = NOW() WHERE id = ?")->execute([$id]);
-    flash('success', __('success_saved'));
+    $pdo = db();
+    $pdo->beginTransaction();
+    try {
+        $stmt = $pdo->prepare('SELECT * FROM deliveries WHERE id = ? FOR UPDATE');
+        $stmt->execute([$id]);
+        $delivery = $stmt->fetch(PDO::FETCH_ASSOC);
+        if (!$delivery) {
+            throw new RuntimeException('not_found');
+        }
+
+        $pdo->prepare("UPDATE deliveries SET status = 'delivered', delivered_at = NOW() WHERE id = ?")->execute([$id]);
+        if (!empty($delivery['order_id'])) {
+            $pdo->prepare("UPDATE orders SET status = 'delivered', delivered_at = NOW() WHERE id = ?")
+                ->execute([(int) $delivery['order_id']]);
+        }
+        $pdo->commit();
+        flash('success', __('success_saved'));
+    } catch (Throwable) {
+        if ($pdo->inTransaction()) {
+            $pdo->rollBack();
+        }
+        flash('error', __('error'));
+    }
     redirect(url('delivery/view.php?id=' . $id));
 }
 
