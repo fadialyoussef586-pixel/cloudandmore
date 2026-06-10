@@ -2193,7 +2193,16 @@ body.sidebar-collapsed .nav-item::before {
   }
 
   .topbar-quick-panel {
-    width: min(280px, calc(100vw - 1.5rem));
+    position: fixed;
+    top: var(--quick-panel-top, calc(env(safe-area-inset-top) + 4rem));
+    left: max(0.75rem, env(safe-area-inset-left));
+    right: max(0.75rem, env(safe-area-inset-right));
+    width: auto;
+    inset-inline-end: unset;
+    inset-inline-start: unset;
+    max-width: none;
+    max-height: min(65vh, 360px);
+    z-index: 1200;
   }
 }
 

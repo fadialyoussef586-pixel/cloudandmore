@@ -29,11 +29,30 @@
     return desktopQuery.matches;
   }
 
+  function positionQuickPanel() {
+    if (!quickToggle || !quickPanel) return;
+
+    if (!isMobileViewport()) {
+      quickPanel.style.removeProperty('--quick-panel-top');
+      quickPanel.style.removeProperty('left');
+      quickPanel.style.removeProperty('right');
+      return;
+    }
+
+    const rect = quickToggle.getBoundingClientRect();
+    const gap = 8;
+    const margin = Math.max(12, window.innerWidth * 0.04);
+    quickPanel.style.setProperty('--quick-panel-top', rect.bottom + gap + 'px');
+    quickPanel.style.left = margin + 'px';
+    quickPanel.style.right = margin + 'px';
+  }
+
   function closeQuickMenu() {
     if (!quickMenu || !quickToggle || !quickPanel) return;
     quickMenu.classList.remove('open');
     quickToggle.setAttribute('aria-expanded', 'false');
     quickPanel.setAttribute('hidden', '');
+    positionQuickPanel();
   }
 
   function openQuickMenu() {
@@ -42,6 +61,7 @@
     quickToggle.setAttribute('aria-expanded', 'true');
     quickPanel.removeAttribute('hidden');
     quickPanel.scrollTop = 0;
+    positionQuickPanel();
   }
 
   function setSubmenuState(group, open) {
@@ -147,6 +167,7 @@
   });
 
   const handleViewportChange = (event) => {
+    closeQuickMenu();
     if (event.matches) {
       setMobileOpen(false);
       setDesktopCollapsed(false);
@@ -159,6 +180,18 @@
       setSubmenuState(group, group.classList.contains('active'));
     });
   };
+
+  window.addEventListener('resize', () => {
+    if (quickMenu?.classList.contains('open')) {
+      positionQuickPanel();
+    }
+  });
+
+  window.addEventListener('scroll', () => {
+    if (quickMenu?.classList.contains('open') && isMobileViewport()) {
+      positionQuickPanel();
+    }
+  }, { passive: true });
 
   if (typeof desktopQuery.addEventListener === 'function') {
     desktopQuery.addEventListener('change', handleViewportChange);
