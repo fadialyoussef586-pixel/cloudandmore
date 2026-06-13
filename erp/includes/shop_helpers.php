@@ -236,7 +236,7 @@ function normalizeUploadedFilesArray(array $files): array
     return $normalized;
 }
 
-function saveProductImage(array $file, string $sku, ?int $suffix = null): ?string
+function saveProductImage(array $file, string $sku, ?string $suffix = null): ?string
 {
     if (($file['error'] ?? UPLOAD_ERR_NO_FILE) === UPLOAD_ERR_NO_FILE) {
         return null;
